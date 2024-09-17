@@ -1,0 +1,7 @@
+/.vscode/obj
+/.vscode/dist
+/*.sln 
+/ThirdParty/*
+/dist
+Rimworld
+

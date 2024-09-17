@@ -1,0 +1,56 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Build Mod + Start RimWorld",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "build all",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "${workspaceFolder}\\.vscode\\build.ps1",
+        "-Command 'StartRimWorld'"
+      ],
+      "runtimeExecutable": "powershell",
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "Build Mod DEV + Start RimWorld",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "build all dev",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "${workspaceFolder}\\.vscode\\build.ps1",
+        "-Command 'StartRimWorld'"
+      ],
+      "runtimeExecutable": "powershell",
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "Copy Mod + Start RimWorld",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "postbuild",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "${workspaceFolder}\\.vscode\\build.ps1",
+        "-Command 'StartRimWorld'"
+      ],
+      "runtimeExecutable": "powershell",
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ]
+}
