@@ -21,42 +21,41 @@ $script:targetName = $csproj.Project.PropertyGroup.AssemblyName
 $script:version = $csproj.Project.PropertyGroup.VersionPrefix
 
 # Set Folders
-$script:AssemblyDistDir = "$PSScriptRoot\dist"
-$script:RootDir = "$PSScriptRoot\.."
-$script:ModDistDir = "$script:RootDir\dist"
-$script:srcDir = "$script:RootDir\src"
-$script:thirdPartyDir = "$script:RootDir\ThirdParty"
-$script:mod_structureDir = "$script:RootDir\mod-structure"
+$script:assemblyDistPath = "$PSScriptRoot\dist"
+$script:rootPath = "$PSScriptRoot\.."
+$script:modDistPath = "$script:rootPath\dist"
+$script:srcPath = "$script:rootPath\src"
+$script:thirdPartyPath = "$script:rootPath\ThirdParty"
+$script:mod_structurePath = "$script:rootPath\mod-structure"
 
 # Check for RimWorld installations and set Folder
-Write-Host "Looking for RimWorld installation..."
+function FindRimWorldInstallation {
 
-$InstallationPaths = Get-Content -Path "$PSScriptRoot\RimWorldPath.txt"
-if ([string]::IsNullOrEmpty($InstallationPaths)) {
-    Write-Host " -> No Path is read"
-}
+    Write-Host "Looking for RimWorld installation..."
 
-
-foreach ($path in $InstallationPaths) {
-    # Write-Host " -  Resolve $path"
-    $path = Invoke-Expression -Command $path
-    # Write-Host " -  Checking $path"
-    if (Test-Path $path) {
-        Write-Host " -> Found RimWorld Path: $path"
-        $script:installDir = $path
-        break
+    $InstallationPaths = Get-Content -Path "$PSScriptRoot\RimWorldPath.txt"
+    if ([string]::IsNullOrEmpty($InstallationPaths)) {
+        Write-Host " -> No Path is read"
     }
-}
- 
-if ([string]::IsNullOrEmpty($script:installDir)) {
+
+    foreach ($path in $InstallationPaths) {
+        # Write-Host " -  Resolve $path"
+        $path = Invoke-Expression -Command $path
+        # Write-Host " -  Checking $path"
+        if (Test-Path $path) {
+            Write-Host " -> Found RimWorld Path: $path"
+            $script:RimWorldInstallationPath = $path
+            return
+        }
+    }
+
     Write-Host " -> RimWorld not found"
+
 }
-
-
-
+FindRimWorldInstallation
 
 # FUNCTIONS
-function RemoveDir($path) {
+function RemoveItem($path) {
     while ($true) {
         if (!(Test-Path $path)) {
             return
@@ -74,66 +73,65 @@ function RemoveDir($path) {
     }
 }
 
+# can be called by tasks.json from vscode
 function Clean {
-    RemoveDir $script:AssemblyDistDir
-    RemoveDir $script:ModDistDir
-    RemoveDir $script:thirdPartyDir
-    mkdir $script:thirdPartyDir
-    RemoveDir "$script:RootDir\.vscode\obj"
-    RemoveDir "$script:RootDir\RimWorld.Ink"
+    RemoveItem $script:assemblyDistPath
+    RemoveItem $script:modDistPath
+    RemoveItem "$script:thirdPartyPath\*"
+    RemoveItem "$script:rootPath\.vscode\obj"
 }
 
 
 function CopyDependencies {
-    if (Test-Path "$script:thirdPartyDir\*.dll") {
+    if (Test-Path "$script:thirdPartyPath\*.dll") {
         return
     }
 
-    if ([string]::IsNullOrEmpty($script:installDir)) {
+    if ([string]::IsNullOrEmpty($script:RimWorldInstallationPath)) {
         Write-Host -ForegroundColor Yellow `
             "Rimworld installation not found; see Readme for how to set up pre-requisites manually."
         return
     }
 
-    $depsDir = "$script:installDir\RimWorldWin64_Data\Managed"
+    $depsPath = "$script:RimWorldInstallationPath\RimWorldWin64_Data\Managed"
     Write-Host "Copying dependencies from installation directory"
-    if (!(Test-Path $script:thirdPartyDir)) { mkdir $script:thirdPartyDir | Out-Null }
-    Copy-Item -Force "$depsDir\Unity*.dll" "$script:thirdPartyDir\"
-    Copy-Item -Force "$depsDir\Assembly-CSharp.dll" "$script:thirdPartyDir\"
+    if (!(Test-Path $script:thirdPartyPath)) { mkdir $script:thirdPartyPath | Out-Null }
+    Copy-Item -Force "$depsPath\Unity*.dll" "$script:thirdPartyPath\"
+    Copy-Item -Force "$depsPath\Assembly-CSharp.dll" "$script:thirdPartyPath\"
 }
 
 function Build {
-    dotnet build
+    dotnet build "$PSScriptRoot\mod.csproj"
 }
 
 function PreBuild {
     Write-Host "PreBuild"
-    RemoveDir $script:AssemblyDistDir
+    RemoveItem $script:assemblyDistPath
     CopyDependencies
 }
 
 function CopyFilesToRimworld {
-    if ([string]::IsNullOrEmpty($script:installDir)) {
+    if ([string]::IsNullOrEmpty($script:RimWorldInstallationPath)) {
         Write-Host -ForegroundColor Yellow `
             "No RimWorld installation found, build will not be copied"
 
         return
     }
 
-    $modsDir = "$script:installDir\Mods"
-    $modDir = "$modsDir\$script:targetName"
-    RemoveDir $modDir
+    $modsPath = "$script:RimWorldInstallationPath\Mods"
+    $thisModPath = "$modsPath\$script:targetName"
+    RemoveItem $thisModPath
 
-    Write-Host "Copying mod to $modDir"
-    Copy-Item -Recurse -Force -Exclude *.zip "$script:ModDistDir\*" $modsDir
+    Write-Host "Copying mod to $thismodPath"
+    Copy-Item -Recurse -Force -Exclude *.zip "$script:modDistPath\*" $modsPath
 }
 
 function CreateModZipFile {
     Write-Host "Creating distro package"
-    $distZip = "$script:ModDistDir\$script:targetName-$script:version.zip"
-    RemoveDir $distZip
+    $distZip = "$script:modDistPath\$script:targetName-$script:version.zip"
+    RemoveItem $distZip
     $sevenZip = "$PSScriptRoot\7z.exe"
-    & $sevenZip a -mx=9 "$distZip" "$script:ModDistDir\*"
+    & $sevenZip a -mx=9 "$distZip" "$script:modDistPath\*"
     if ($LASTEXITCODE -ne 0) {
         throw "7zip command failed"
     }
@@ -144,7 +142,7 @@ function CreateModZipFile {
 function PostBuild {
     Write-Host "PostBuild"
 
-    if ([string]::IsNullOrEmpty($script:installDir)) {
+    if ([string]::IsNullOrEmpty($script:RimWorldInstallationPath)) {
         Write-Host -ForegroundColor Red `
             "Rimworld installation not found; not setting game version."
         return
@@ -155,22 +153,22 @@ function PostBuild {
     $shortVersion = "$($versionParts[0]).$($versionParts[1])"
 
     # Remove old files
-    $defaultAssemblyDir = "$script:mod_structureDir\Assemblies\"
-    $shortVersionAssemblyDir = "$script:mod_structureDir\$shortVersion\Assemblies\"
-    RemoveDir($defaultAssemblyDir)
-    mkdir $defaultAssemblyDir | Out-Null
-    RemoveDir($shortVersionAssemblyDir)
-    mkdir $shortVersionAssemblyDir | Out-Null
+    $defaultAssemblyPath = "$script:mod_structurePath\Assemblies"
+    RemoveItem("$defaultAssemblyPath")
+    $shortVersionAssemblyPath = "$script:mod_structurePath\$shortVersion\Assemblies"
+    RemoveItem("$shortVersionAssemblyPath")
 
     # Copy assembly to mod-structure
-    Copy-Item "$script:AssemblyDistDir\$script:targetName.dll" $defaultAssemblyDir
-    Copy-Item "$script:AssemblyDistDir\$script:targetName.dll" $shortVersionAssemblyDir
+    mkdir $defaultAssemblyPath | Out-Null
+    Copy-Item "$script:assemblyDistPath\$script:targetName.dll" $defaultAssemblyPath
+    mkdir $shortVersionAssemblyPath | Out-Null
+    Copy-Item "$script:assemblyDistPath\$script:targetName.dll" $shortVersionAssemblyPath
 
-    # Copy mod-structure to ModDestDir
-    Copy-Item -Recurse -Force "$script:mod_structureDir\*" "$script:ModDistDir\$script:targetName"
+    # Copy mod-structure to ModDestPath
+    Copy-Item -Recurse -Force "$script:mod_structurePath\*" "$script:modDistPath\$script:targetName"
 
     if ($VSConfiguration -eq "Debug") {
-        $AboutFilePath = "$script:ModDistDir\$script:targetName\About\About.xml"
+        $AboutFilePath = "$script:modDistPath\$script:targetName\About\About.xml"
 
         # Get the current timestamp in the desired format
         $timestamp = Get-Date -Format "HH:mm - dd.MM.yyyy"
@@ -192,13 +190,13 @@ function PostBuild {
 }
 
 function StartRimWorld {
-    if ([string]::IsNullOrEmpty($script:installDir)) {
+    if ([string]::IsNullOrEmpty($script:RimWorldInstallationPath)) {
         Write-Host -ForegroundColor Red `
             "Rimworld installation not found; not starting Game."
         return
     }
     Write-Host "Start RimWorld"
-    Start-Process "$script:installDir\RimWorldWin64.exe" 
+    Start-Process "$script:RimWorldInstallationPath\RimWorldWin64.exe" 
 }
 
 
