@@ -1,7 +1,4 @@
 /.vscode/obj
-/.vscode/dist
-/*.sln 
-/ThirdParty/*
-/dist
-Rimworld
-
+/.vscode/bin
+/output
+/localDependencies/*

@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build",
+      "label": "clean",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'Build'",
+      "command": ".vscode/build.ps1 -Command 'Clean'",
       "problemMatcher": {
         "owner": "custom",
         "fileLocation": ["absolute"],
@@ -56,6 +56,13 @@
       }
     },
     {
+      "label": "build",
+      "type": "shell",
+      "command": ".vscode/build.ps1 -Command 'Build'",
+      "problemMatcher": "$msCompile"
+    },
+
+    {
       "label": "postbuild",
       "type": "shell",
       "command": ".vscode/build.ps1 -Command 'PostBuild'",
@@ -82,76 +89,62 @@
         ]
       }
     },
-    {
+        {
       "label": "build all",
-      "dependsOn": ["prebuild", "build", "postbuild"],
-      "dependsOrder": "sequence",
+      "type": "shell",
+      "command": ".vscode/build.ps1 -Command 'BuildAll'",
+      "problemMatcher": {
+        "owner": "custom",
+        "fileLocation": ["absolute"],
+        "pattern": [
+          {
+            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
+            "file": 1,
+            "line": 2,
+            "column": 3
+          },
+          {
+            "regexp": "\\+.*"
+          },
+          {
+            "regexp": "\\+.*"
+          },
+          {
+            "regexp": "(.+)",
+            "message": 1
+          }
+        ]
+      },
       "group": {
         "kind": "build",
         "isDefault": true
-      }
-    },
-    {
-      "label": "clean",
-      "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'Clean'",
-      "problemMatcher": {
-        "owner": "custom",
-        "fileLocation": ["absolute"],
-        "pattern": [
-          {
-            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
-            "file": 1,
-            "line": 2,
-            "column": 3
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "(.+)",
-            "message": 1
-          }
-        ]
-      }
-    },
-    {
-      "label": "postbuild dev",
-      "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'PostBuild' -VSConfiguration 'DEBUG'",
-      "problemMatcher": {
-        "owner": "custom",
-        "fileLocation": ["absolute"],
-        "pattern": [
-          {
-            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
-            "file": 1,
-            "line": 2,
-            "column": 3
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "(.+)",
-            "message": 1
-          }
-        ]
       }
     },
     {
       "label": "build all dev",
-      "dependsOn": ["prebuild", "build", "postbuild dev"],
-      "dependsOrder": "sequence",
-      "group": {
-        "kind": "build",
-        "isDefault": true
+      "type": "shell",
+      "command": ".vscode/build.ps1 -Command 'BuildAll' -VSConfiguration 'DEBUG'",
+      "problemMatcher": {
+        "owner": "custom",
+        "fileLocation": ["absolute"],
+        "pattern": [
+          {
+            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
+            "file": 1,
+            "line": 2,
+            "column": 3
+          },
+          {
+            "regexp": "\\+.*"
+          },
+          {
+            "regexp": "\\+.*"
+          },
+          {
+            "regexp": "(.+)",
+            "message": 1
+          }
+        ]
       }
     }
   ]

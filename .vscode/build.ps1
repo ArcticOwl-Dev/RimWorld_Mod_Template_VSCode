@@ -8,7 +8,10 @@ param
     [Parameter(Mandatory = $false)]
     [string]
     $VSConfiguration = "Release"
+
 )
+
+
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -21,11 +24,11 @@ $script:targetName = $csproj.Project.PropertyGroup.AssemblyName
 $script:version = $csproj.Project.PropertyGroup.VersionPrefix
 
 # Set Folders
-$script:assemblyDistPath = "$PSScriptRoot\dist"
-$script:rootPath = "$PSScriptRoot\.."
-$script:modDistPath = "$script:rootPath\dist"
+$script:assemblyDistPath = "$PSScriptRoot\bin"
+$script:rootPath = Resolve-Path "$PSScriptRoot\.."
+$script:modOutputPath = "$script:rootPath\output"
 $script:srcPath = "$script:rootPath\src"
-$script:thirdPartyPath = "$script:rootPath\ThirdParty"
+$script:localDependencies = "$script:rootPath\localDependencies"
 $script:mod_structurePath = "$script:rootPath\mod-structure"
 
 # Check for RimWorld installations and set Folder
@@ -73,37 +76,59 @@ function RemoveItem($path) {
     }
 }
 
-# can be called by tasks.json from vscode
-function Clean {
-    RemoveItem $script:assemblyDistPath
-    RemoveItem $script:modDistPath
-    RemoveItem "$script:thirdPartyPath\*"
-    RemoveItem "$script:rootPath\.vscode\obj"
-}
-
-
 function CopyDependencies {
-    if (Test-Path "$script:thirdPartyPath\*.dll") {
+    if (Test-Path "$script:localDependencies\*.dll") {
         return
     }
 
     if ([string]::IsNullOrEmpty($script:RimWorldInstallationPath)) {
         Write-Host -ForegroundColor Yellow `
-            "Rimworld installation not found; see Readme for how to set up pre-requisites manually."
+            "Rimworld installation not found; Edit path to RimWorld in RimWorldPath.txt"
         return
     }
 
+    # import RimWorld dependencies
     $depsPath = "$script:RimWorldInstallationPath\RimWorldWin64_Data\Managed"
-    Write-Host "Copying dependencies from installation directory"
-    if (!(Test-Path $script:thirdPartyPath)) { mkdir $script:thirdPartyPath | Out-Null }
-    Copy-Item -Force "$depsPath\Unity*.dll" "$script:thirdPartyPath\"
-    Copy-Item -Force "$depsPath\Assembly-CSharp.dll" "$script:thirdPartyPath\"
+    Write-Host "Copying RimWorld dependencies from installation directory"
+    if (!(Test-Path $script:localDependencies)) { mkdir $script:localDependencies | Out-Null }
+    Copy-Item -Force "$depsPath\Unity*.dll" "$script:localDependencies\"
+    Copy-Item -Force "$depsPath\Assembly-CSharp.dll" "$script:localDependencies\"
+
+    # import third party dependencies
+    $depsPaths = Get-Content -Path "$PSScriptRoot\ThirdPartyDependencies.txt"
+    if ([string]::IsNullOrEmpty($depsPaths)) {
+        Write-Host " -> No ThirdParty Dependencies"
+        return
+    }
+
+    foreach ($depPath in $depsPaths) {
+        # Write-Host " -  Resolve $path"
+        $depPath = Invoke-Expression -Command $depPath
+        # Write-Host " -  Checking $path"
+        if (Test-Path $depPath) {
+            Write-Host " -> Copying $depPath"
+            Copy-Item -Force $depsPath "$script:localDependencies\"
+        }
+        else {
+            Write-Host " -> File does not exist: $depPath"
+        }
+    }
 }
 
+# can be called by tasks.json from vscode
+function Clean {
+    RemoveItem $script:assemblyDistPath
+    RemoveItem $script:modOutputPath
+    RemoveItem "$script:localDependencies\*"
+    RemoveItem "$script:rootPath\.vscode\obj"
+}
+
+# can be called by tasks.json from vscode
 function Build {
     dotnet build "$PSScriptRoot\mod.csproj"
 }
 
+# can be called by tasks.json from vscode
 function PreBuild {
     Write-Host "PreBuild"
     RemoveItem $script:assemblyDistPath
@@ -123,15 +148,15 @@ function CopyFilesToRimworld {
     RemoveItem $thisModPath
 
     Write-Host "Copying mod to $thismodPath"
-    Copy-Item -Recurse -Force -Exclude *.zip "$script:modDistPath\*" $modsPath
+    Copy-Item -Recurse -Force -Exclude *.zip "$script:modOutputPath\*" $modsPath
 }
 
 function CreateModZipFile {
     Write-Host "Creating distro package"
-    $distZip = "$script:modDistPath\$script:targetName-$script:version.zip"
+    $distZip = "$script:modOutputPath\$script:targetName-$script:version.zip"
     RemoveItem $distZip
     $sevenZip = "$PSScriptRoot\7z.exe"
-    & $sevenZip a -mx=9 "$distZip" "$script:modDistPath\*"
+    & $sevenZip a -mx=9 "$distZip" "$script:modOutputPath\*"
     if ($LASTEXITCODE -ne 0) {
         throw "7zip command failed"
     }
@@ -139,6 +164,7 @@ function CreateModZipFile {
     Write-Host "Created $distZip"
 }
 
+# can be called by tasks.json from vscode
 function PostBuild {
     Write-Host "PostBuild"
 
@@ -164,11 +190,13 @@ function PostBuild {
     mkdir $shortVersionAssemblyPath | Out-Null
     Copy-Item "$script:assemblyDistPath\$script:targetName.dll" $shortVersionAssemblyPath
 
-    # Copy mod-structure to ModDestPath
-    Copy-Item -Recurse -Force "$script:mod_structurePath\*" "$script:modDistPath\$script:targetName"
+    # Copy mod-structure to ModOutputPath
+    RemoveItem("$script:modOutputPath")
+    mkdir "$script:modOutputPath\$script:targetName"
+    Copy-Item -Recurse -Force "$script:mod_structurePath\*" "$script:modOutputPath\$script:targetName\"
 
     if ($VSConfiguration -eq "Debug") {
-        $AboutFilePath = "$script:modDistPath\$script:targetName\About\About.xml"
+        $AboutFilePath = "$script:modOutputPath\$script:targetName\About\About.xml"
 
         # Get the current timestamp in the desired format
         $timestamp = Get-Date -Format "HH:mm - dd.MM.yyyy"
@@ -189,6 +217,7 @@ function PostBuild {
     CopyFilesToRimworld
 }
 
+# can be called by tasks.json from vscode
 function StartRimWorld {
     if ([string]::IsNullOrEmpty($script:RimWorldInstallationPath)) {
         Write-Host -ForegroundColor Red `
@@ -199,6 +228,12 @@ function StartRimWorld {
     Start-Process "$script:RimWorldInstallationPath\RimWorldWin64.exe" 
 }
 
+# can be called by tasks.json from vscode
+function BuildAll {
+    PreBuild
+    Build
+    PostBuild
+}
 
 
 & $Command
