@@ -4,7 +4,6 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
-
     {
       "name": "Build Mod + Start RimWorld",
       "type": "node",
@@ -37,11 +36,26 @@
       "console": "internalConsole",
       "internalConsoleOptions": "neverOpen"
     },
-     {
+    {
       "name": "Build Mod",
       "type": "node",
       "request": "launch",
       "preLaunchTask": "build all",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "echo 'Do nothing'"
+      ],
+      "runtimeExecutable": "powershell",
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "Clean",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "clean",
       "args": [
         "-ExecutionPolicy",
         "Bypass",
