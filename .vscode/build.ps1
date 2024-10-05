@@ -107,7 +107,7 @@ function CopyDependencies {
         # Write-Host " -  Checking $path"
         if (Test-Path $depPath) {
             Write-Host " -> Copying $depPath"
-            Copy-Item -Force $depsPath "$script:localDependencies\"
+            Copy-Item -Force $depPath "$script:localDependencies\"
         }
         else {
             Write-Host " -> File does not exist: $depPath"
