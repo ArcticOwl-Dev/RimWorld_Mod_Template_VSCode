@@ -5,147 +5,55 @@
       "label": "clean",
       "type": "shell",
       "command": ".vscode/build.ps1 -Command 'Clean'",
-      "problemMatcher": {
-        "owner": "custom",
-        "fileLocation": ["absolute"],
-        "pattern": [
-          {
-            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
-            "file": 1,
-            "line": 2,
-            "column": 3
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "(.+)",
-            "message": 1
-          }
-        ]
-      }
     },
     {
-      "label": "prebuild",
+      "label": "_copyDependencies",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'PreBuild'",
-      "problemMatcher": {
-        "owner": "custom",
-        "fileLocation": ["absolute"],
-        "pattern": [
-          {
-            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
-            "file": 1,
-            "line": 2,
-            "column": 3
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "(.+)",
-            "message": 1
-          }
-        ]
-      }
+      "command": ".vscode/build.ps1 -Command 'CopyDependencies'",
+    },
+    {
+      "label": "_compile",
+      "type": "shell",
+      "command": ".vscode/build.ps1 -Command 'Compile'",
+    },
+    {
+      "label": "_compile [dev]",
+      "type": "shell",
+      "command": ".vscode/build.ps1 -Command 'Compile' -VSConfiguration 'DEBUG'",
+    },
+    {
+      "label": "_postbuild",
+      "type": "shell",
+      "command": ".vscode/build.ps1 -Command 'PostBuild'",
     },
     {
       "label": "build",
       "type": "shell",
       "command": ".vscode/build.ps1 -Command 'Build'",
-      "problemMatcher": "$msCompile"
-    },
-
-    {
-      "label": "postbuild",
-      "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'PostBuild'",
-      "problemMatcher": {
-        "owner": "custom",
-        "fileLocation": ["absolute"],
-        "pattern": [
-          {
-            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
-            "file": 1,
-            "line": 2,
-            "column": 3
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "(.+)",
-            "message": 1
-          }
-        ]
-      }
-    },
-        {
-      "label": "build all",
-      "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'BuildAll'",
-      "problemMatcher": {
-        "owner": "custom",
-        "fileLocation": ["absolute"],
-        "pattern": [
-          {
-            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
-            "file": 1,
-            "line": 2,
-            "column": 3
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "(.+)",
-            "message": 1
-          }
-        ]
-      },
       "group": {
         "kind": "build",
         "isDefault": true
       }
     },
     {
-      "label": "build all dev",
+      "label": "build [dev]",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'BuildAll' -VSConfiguration 'DEBUG'",
-      "problemMatcher": {
-        "owner": "custom",
-        "fileLocation": ["absolute"],
-        "pattern": [
-          {
-            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
-            "file": 1,
-            "line": 2,
-            "column": 3
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "\\+.*"
-          },
-          {
-            "regexp": "(.+)",
-            "message": 1
-          }
-        ]
-      }
+      "command": ".vscode/build.ps1 -Command 'Build' -VSConfiguration 'DEBUG'",
+    },
+    {
+      "label": "start RimWorld",
+      "type": "shell",
+      "command": ".vscode/build.ps1 -Command 'StartRimWorld'",
+    },
+    {
+      "label": "install RimWorld debug ",
+      "type": "shell",
+      "command": ".vscode/RimWorldDebug.ps1 -Command 'InstallRimWorldDebug'"
+    },
+    {
+      "label": "remove RimWorld debug ",
+      "type": "shell",
+      "command": ".vscode/RimWorldDebug.ps1 -Command 'RemoveRimWorldDebug'"
     }
   ]
 }

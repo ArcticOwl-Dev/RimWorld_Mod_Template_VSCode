@@ -1,4 +1,7 @@
 /.vscode/obj
 /.vscode/bin
+/.vscode/debugFiles
 /output
-/localDependencies/*
+/localDependencies
+/mod-structure/*/*.pdb
+/obj

@@ -4,26 +4,34 @@
 		<TargetFramework>net480</TargetFramework>
 		<PlatformTarget>x64</PlatformTarget>
 
-		<!-- Modify [RootNamespace], [AssemblyName], [VersionPrefix] (Set the first 2 numbers to the same as Rimworld) -->
+		<!-- Modify [RootNamespace], [AssemblyName] to your mod name -->
 		<RootNamespace>Template</RootNamespace>
 		<AssemblyName>Template</AssemblyName>
+		<!-- Modify [VersionPrefix] to your mod Version-->
 		<VersionPrefix>1.5.0.0</VersionPrefix>
 
-
-		<OutputPath>bin</OutputPath>
 		<!-- Do not generate pdb file -->
 		<DebugType>none</DebugType>
-
 		<DebugSymbols>false</DebugSymbols>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	</PropertyGroup>
 
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+		<!-- Possible to compile spezific code only on configuration debug `#if DEBUG` and `#endif`  -->
+		<DefineConstants>DEBUG</DefineConstants>
+		<!-- generate pdb file for debugging-->
+		<DebugType>pdbonly</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!-- Mod -->
-		<Compile Include="../src/*" />
+		<Compile Include="..\src\**\*.*" />
+		<None Remove ="**\*.*" />
 
 		<!-- Rimworld -->
-		<Reference Include="../localDependencies/*.dll">
+		<Reference Include="..\localDependencies\*.dll">
 			<Private>False</Private>
 		</Reference>
 

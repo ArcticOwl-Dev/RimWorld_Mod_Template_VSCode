@@ -1,5 +1,9 @@
 {
     "recommendations": [
-        "ms-dotnettools.csharp"
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.vscodeintellicode-csharp",
+        "spmeesseman.vscode-taskexplorer",
+        "icsharpcode.ilspy-vscode"
     ]
 }

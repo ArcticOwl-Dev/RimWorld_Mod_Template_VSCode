@@ -20,45 +20,22 @@ using RimWorld.Planet;
 
 namespace Template
 {
-    [DefOf]
-    public class TemplateDefOf
+    public class Mod : Verse.Mod
     {
-        public static LetterDef success_letter;
-    }
-
-    public class MyMapComponent : MapComponent
-    {
-        public MyMapComponent(Map map) : base(map) { }
-        public override void FinalizeInit()
+        /// <summary>
+        /// A mandatory constructor which resolves the reference to our settings.
+        /// </summary>
+        /// <param name="content"></param>
+        public Mod(ModContentPack content) : base(content)
         {
-            Messages.Message("Success", null, MessageTypeDefOf.PositiveEvent);
-            Find.LetterStack.ReceiveLetter(new TaggedString("Success"), new TaggedString("Success message"), TemplateDefOf.success_letter, "", 0);
+            Log.Message("Mod Loaded!");
+            Log.Warning("!");
+
+#if DEBUG
+            Log.Message("Debug Message!");
+            
+#endif
+
         }
     }
-
-    [StaticConstructorOnStartup]
-    public static class Start
-    {
-        static Start()
-        {
-            Log.Message("Mod template loaded successfully!");
-
-            // *Uncomment for Harmony*
-            // Harmony harmony = new Harmony("Template");
-            // harmony.PatchAll( Assembly.GetExecutingAssembly() );
-        }
-    }
-
-    // *Uncomment for Harmony*
-    // [HarmonyPatch(typeof(LetterStack), "ReceiveLetter")]
-    // [HarmonyPatch(new Type[] {typeof(TaggedString), typeof(TaggedString), typeof(LetterDef), typeof(string), typeof(int), typeof(bool)})]
-    // public static class LetterTextChange
-    // {
-    //     public static bool Prefix(ref TaggedString text)
-    //     {
-    //         text += new TaggedString(" with harmony");
-    //         return true;
-    //     }
-    // }
-
 }
