@@ -3,5 +3,5 @@
 /.vscode/debugFiles
 /output
 /localDependencies
-/mod-structure/*/*.pdb
+/mod-structure/**/*.pdb
 /obj
