@@ -32,16 +32,11 @@ $script:file_modcsproj = "$script:path_vscode\RimWorld_Mod.csproj"
 
 # Predefine Variable
 $script:path_RimWorldInstallation = ""
+$script:ModName = ""
 
 # import functions from helperscript
 . "$script:file_helperscriptPS1"
 
-# Load the XML content of the .csproj file
-[xml]$csproj = Get-Content $script:file_modcsproj
-
-# Extract AssemblyName and VersionPrefix from the PropertyGroup
-$script:targetName = $csproj.Project.PropertyGroup[0].AssemblyName
-$script:version = $csproj.Project.PropertyGroup[0].VersionPrefix
 
 
 # FUNCTIONS
@@ -66,6 +61,10 @@ function Compile {
     }
     RemoveItem $script:path_assemblyOutput
     dotnet build $script:file_modcsproj --output "$script:path_assemblyOutput" --configuration "$VSConfiguration"
+
+    if ($LASTEXITCODE -ne 0) {
+        exit
+    }
 }
 
 # can be called by tasks.json from vscode
@@ -73,7 +72,7 @@ function CopyDependencies {
     Write-Host -ForegroundColor Blue "`r`n#### Checking Dependencies ####"
 
     if ([string]::IsNullOrEmpty($script:path_RimWorldInstallation)) {
-        $script:path_RimWorldInstallation = GetRimWorldInstallationPath -RimWorldPathTXT $script:file_RimWorldPathTXT
+        $script:path_RimWorldInstallation = GetRimWorldInstallationPath 
     }
 
     # import RimWorld dependencies
@@ -109,7 +108,8 @@ function CopyDependencies {
 
     # import third party dependencies
     Write-Host "Import ThirdPartyDependencies"
-    $depsPaths = Get-Content -Path $script:file_thirdPartyDependenciesTXT
+    . "$script:path_vscode\ThirdPartyDependencies.ps1"
+    
     if ([string]::IsNullOrEmpty($depsPaths)) {
         Write-Host " -> No ThirdParty Dependencies"
         return
@@ -153,7 +153,7 @@ function CopyAssemblyFile {
 
     # RimWorld version assembly - remove old files + copy new ones
     if ([string]::IsNullOrEmpty($script:path_RimWorldInstallation)) {
-        $script:path_RimWorldInstallation = GetRimWorldInstallationPath -RimWorldPathTXT $script:file_RimWorldPathTXT
+        $script:path_RimWorldInstallation = GetRimWorldInstallationPath 
     }
     $RimWorldVersion = GetRimWorldVersion -RimWorldInstallationPath $script:path_RimWorldInstallation
     if (![string]::IsNullOrEmpty($RimWorldVersion)) {
@@ -169,29 +169,40 @@ function CopyAssemblyFile {
 function CopyFilesToRimworld {
     Write-Host "`r`nCopy files to RimWorld mod folder"
     if ([string]::IsNullOrEmpty($script:path_RimWorldInstallation)) {
-        $script:path_RimWorldInstallation = GetRimWorldInstallationPath -RimWorldPathTXT $script:file_RimWorldPathTXT
+        $script:path_RimWorldInstallation = GetRimWorldInstallationPath 
+    }
+    if ([string]::IsNullOrEmpty($script:ModName)) {
+        $script:ModName = GetModName -file_modcsproj $script:file_modcsproj 
     }
 
     $modsPath = "$script:path_RimWorldInstallation\Mods"
-    $thisModPath = "$modsPath\$script:targetName"
+    $thisModPath = "$modsPath\$script:ModName"
     RemoveItem $thisModPath -silent
 
     Write-Host " -> $thismodPath"
-    Copy-Item -Recurse -Force "$script:path_modOutput\$script:targetName" $modsPath
+    Copy-Item -Recurse -Force "$script:path_modOutput\$script:ModName" $modsPath
 }
 
 # subcomponents from PostBuild
 function CreateModZipFile {
     Write-Host "`r`nCreating distro package" 
 
-    if ($VSConfiguration -eq "Debug") {
-        $distZip = "$script:path_modOutput\$script:targetName-$script:version-DEBUG.zip"
-    }
-    else {
-        $distZip = "$script:path_modOutput\$script:targetName-$script:version.zip"
+    if ([string]::IsNullOrEmpty($script:ModName)) {
+        $script:ModName = GetModName -file_modcsproj $script:file_modcsproj 
     }
 
-    Compress-Archive -Path "$script:path_modOutput\$script:targetName" -DestinationPath "$distZip" -Force
+    # Load the XML content of the .csproj file
+    [xml]$csproj = Get-Content $script:file_modcsproj
+    $version = $csproj.Project.PropertyGroup[0].VersionPrefix
+
+    if ($VSConfiguration -eq "Debug") {
+        $distZip = "$script:path_modOutput\$script:ModName-$version-DEBUG.zip"
+    }
+    else {
+        $distZip = "$script:path_modOutput\$script:ModName-$version.zip"
+    }
+
+    Compress-Archive -Path "$script:path_modOutput\$script:ModName" -DestinationPath "$distZip" -Force
     Write-Host " -> $distZip"
 }
 
@@ -200,14 +211,18 @@ function CreateModFolder {
 
     # Copy mod-structure to path_modOutput
     Write-Host "`r`nCreating mod folder"
-    Write-Host " -> $script:path_modOutput\$script:targetName"
+
+    if ([string]::IsNullOrEmpty($script:ModName)) {
+        $script:ModName = GetModName -file_modcsproj $script:file_modcsproj 
+    }
+    Write-Host " -> $script:path_modOutput\$script:ModName"
 
     RemoveItem("$script:path_modOutput") -silent
-    mkdir "$script:path_modOutput\$script:targetName" | Out-Null
-    Copy-Item -Recurse -Force "$script:path_mod_structure\*" "$script:path_modOutput\$script:targetName\"
+    mkdir "$script:path_modOutput\$script:ModName" | Out-Null
+    Copy-Item -Recurse -Force "$script:path_mod_structure\*" "$script:path_modOutput\$script:ModName\"
 
     if ($VSConfiguration -eq "Debug") {
-        $AboutFilePath = "$script:path_modOutput\$script:targetName\About\About.xml"
+        $AboutFilePath = "$script:path_modOutput\$script:ModName\About\About.xml"
 
         # Get the current timestamp in the desired format
         $timestamp = Get-Date -Format "HH:mm - dd.MM.yyyy"
@@ -238,10 +253,35 @@ function PostBuild {
 # can be called by tasks.json from vscode
 function StartRimWorld {
     if ([string]::IsNullOrEmpty($script:path_RimWorldInstallation)) {
-        $script:path_RimWorldInstallation = GetRimWorldInstallationPath -RimWorldPathTXT $script:file_RimWorldPathTXT
+        $script:path_RimWorldInstallation = GetRimWorldInstallationPath 
     }
     Write-Host "Start RimWorld"
     Start-Process "$script:path_RimWorldInstallation\RimWorldWin64.exe" 
+}
+
+# can be called by tasks.json from vscode
+function StartRimWorldQuickTest {
+    if ([string]::IsNullOrEmpty($script:path_RimWorldInstallation)) {
+        $script:path_RimWorldInstallation = GetRimWorldInstallationPath 
+    }
+    Write-Host "Start RimWorld"
+    Start-Process -FilePath "$script:path_RimWorldInstallation\RimWorldWin64.exe" -ArgumentList "-quicktest" 
+}
+
+function StartDNSPY {
+    if ([string]::IsNullOrEmpty($script:path_RimWorldInstallation)) {
+        $script:path_RimWorldInstallation = GetRimWorldInstallationPath 
+    }
+    if ([string]::IsNullOrEmpty($script:ModName)) {
+        $script:ModName = GetModName -file_modcsproj $script:file_modcsproj 
+    }
+    $version = GetRimWorldVersion -RimWorldInstallationPath $script:path_RimWorldInstallation
+    $path_modDLL = $script:path_RimWorldInstallation + "\Mods\" + $script:ModName + "\" + $version + "\" + "Assemblies\" + $script:ModName + ".dll"
+    $DnSpyPath = GetDNSPYPath
+    Write-Host "Start dnSpy with mod DLL: $path_modDLL"
+    Start-Sleep -Seconds 2
+    Start-Process -FilePath $DnSpyPath -ArgumentList "--files `"$path_modDLL`" --no-activate"
+
 }
 
 # can be called by tasks.json from vscode

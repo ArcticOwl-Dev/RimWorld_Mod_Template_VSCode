@@ -46,6 +46,11 @@
       "command": ".vscode/build.ps1 -Command 'StartRimWorld'",
     },
     {
+      "label": "start RimWorld -quicktest",
+      "type": "shell",
+      "command": ".vscode/build.ps1 -Command 'StartRimWorldQuickTest'",
+    },
+    {
       "label": "install RimWorld debug ",
       "type": "shell",
       "command": ".vscode/RimWorldDebug.ps1 -Command 'InstallRimWorldDebug'"
@@ -54,6 +59,11 @@
       "label": "remove RimWorld debug ",
       "type": "shell",
       "command": ".vscode/RimWorldDebug.ps1 -Command 'RemoveRimWorldDebug'"
+    },
+    {
+      "label": "start dnSPY",
+      "type": "shell",
+      "command": ".vscode/build.ps1 -Command 'StartDNSPY'",
     }
   ]
 }

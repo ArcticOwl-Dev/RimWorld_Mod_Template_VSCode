@@ -484,6 +484,18 @@ function RemoveItem() {
     }
 }
 
+function GetModName {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $file_modcsproj
+    )
+    [xml]$csproj = Get-Content $file_modcsproj
+
+    # Extract AssemblyName from the PropertyGroup
+    return $csproj.Project.PropertyGroup[0].AssemblyName
+}
+
 function GetRimWorldVersion {
     [CmdletBinding()]
     param (
@@ -501,35 +513,93 @@ function GetRimWorldVersion {
     return $shortVersion
 
 }
+
+function SetEnviromentVariableInteractive {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Question,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $EnvName
+    )
+    Write-Host "`r`nCtrl+Shift+V to copy the path from the clipboard"
+    $value = Read-Host $Question
+    [System.Environment]::SetEnvironmentVariable($EnvName, $value, [System.EnvironmentVariableTarget]::User)
+    Write-Host " -> Set $EnvName to $value`r`n"
+}
+
 function GetRimWorldInstallationPath {
     # Check for RimWorld installations
-    param
-    (
-        [Parameter(Mandatory = $true)]
-        [ValidateScript( { Test-Path $_ -IsValid } )]
-        [string]
-        $RimWorldPathTXT
-
-    )
 
     Write-Host "Looking for RimWorld installation..."
 
-    $InstallationPaths = Get-Content -Path $RimWorldPathtxt
-    if ([string]::IsNullOrEmpty($InstallationPaths)) {
-        Write-Host " -> File is empty"
-    }
-
-    foreach ($path in $InstallationPaths) {
-        # Write-Host " -  Resolve $path"
-        $path = Invoke-Expression -Command $path
-        # Write-Host " -  Checking $path"
-        if (Test-Path $path) {
-            Write-Host " -> Found RimWorld Path: $path `r`n"
-            return $path
+    $path_RimWorld = [System.Environment]::GetEnvironmentVariable("RimWorldInstallationPath", "User")
+    if (![string]::IsNullOrEmpty($path_RimWorld)) {
+        if (Test-Path "$path_RimWorld\RimWorldWin64.exe") {
+            Write-Host " -> Found RimWorld Path (env): $path_RimWorld`r`n"
+            return $path_RimWorld
         }
     }
 
-    Write-Host " -> Rimworld installation not found; Edit path to RimWorld in RimWorldPath.txt"
+    $StandardRimWorldInstallationPath = "C:\Program Files (x86)\Steam\steamapps\common\RimWorld"
+    if (Test-Path "$StandardRimWorldInstallationPath\RimWorldWin64.exe") {
+        Write-Host " -> Found RimWorld Path (standard): $StandardRimWorldInstallationPath `r`n"
+        [System.Environment]::SetEnvironmentVariable("RimWorldInstallationPath", $StandardRimWorldInstallationPath, [System.EnvironmentVariableTarget]::User)
+        return $StandardRimWorldInstallationPath
+    }
+
+    if ((Read-Host "Do you want to create a new environment variable for the RimWorld installation path? (y/n)") -eq "y") {
+         
+        for ($i = 0; $i -lt 3; $i++) {
+            SetEnviromentVariableInteractive -Question "Please enter the path to the RimWorld installation" -EnvName "RimWorldInstallationPath"
+            $path_RimWorld = [System.Environment]::GetEnvironmentVariable("RimWorldInstallationPath", "User")
+            if (Test-Path "$path_RimWorld\RimWorldWin64.exe") {
+                return $path_RimWorld
+            }
+            Write-Host " -> RimWorldWin64.exe not found, please try again: $path_RimWorld\RimWorldWin64.exe`r`n"
+        }
+    }
+
+    Write-Host " -> Rimworld installation not found; Need Enviroment variable 'RimWorldInstallationPath' "
     exit "RimWorld installation not found"
 
 }
+
+function GetDNSPYPath {
+    # Check for DNSPY installations
+
+    Write-Host "Looking for dnSPY installation..."
+    $path_dnSpy = [System.Environment]::GetEnvironmentVariable("path_dnSpy", "User")
+    if (![string]::IsNullOrEmpty($path_dnSpy)) {
+        if ((Test-Path $path_dnSpy) -and ($path_dnSpy.EndsWith(".exe"))) {
+            Write-Host " -> Found dnSPY Path: $path_dnSpy `r`n"
+            return $path_dnSpy
+        }
+        else {
+            Write-Host " -> dnSpy.exe not found, environment variable is wrong: $path_dnSpy`r`n"
+        }
+    }
+    else {
+        Write-Host " -> 'path_dnSpy' environment variable not found"
+    }
+
+    if ((Read-Host "Do you want to create a new environment variable 'path_dnSpy' for the path to dnSPY.exe? (y/n)") -eq "y") {
+        
+        for ($i = 0; $i -lt 3; $i++) {
+            SetEnviromentVariableInteractive -Question "Please enter the path to the dnSPY.exe" -EnvName "path_dnSpy"
+            $path_dnSpy = [System.Environment]::GetEnvironmentVariable("path_dnSpy", "User")
+            if ((Test-Path $path_dnSpy) -and ($path_dnSpy.EndsWith(".exe"))) {
+                return $path_dnSpy
+            }
+            Write-Host " -> dnSpy.exe not found, please try again: $path_dnSpy`r`n"
+        }
+    }
+
+    Write-Host " -> dnSPY installation not found; Need Enviroment variable 'path_dnSpy' "
+    exit "dnSPY installation not found"
+
+}
+

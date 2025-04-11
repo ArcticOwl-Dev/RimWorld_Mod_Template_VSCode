@@ -1,3 +1,0 @@
-"${Env:ProgramFiles(x86)}\Steam\SteamApps\common\RimWorld"
-"$(${Env:ProgramFiles})\Steam\SteamApps\common\RimWorld"
-"F:\Games\SteamLibrary\steamapps\common\RimWorld"
