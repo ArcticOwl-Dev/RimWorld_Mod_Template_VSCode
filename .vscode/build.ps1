@@ -116,8 +116,6 @@ function CopyDependencies {
     }
 
     foreach ($depPath in $depsPaths) {
-        # Write-Host " -  Resolve $depPath"
-        $depPath = Invoke-Expression -Command $depPath
         # Write-Host " -  Checking $depPath"
         if (Test-Path $depPath) {
             $filename = Split-Path $depPath -Leaf
