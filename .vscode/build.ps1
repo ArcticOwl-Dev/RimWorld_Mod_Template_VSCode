@@ -26,8 +26,7 @@ $script:path_mod_structure = "$script:path_projectroot\mod-structure"
 
 # Set file paths
 $script:file_helperscriptPS1 = "$script:path_vscode\helperscript.ps1"
-$script:file_RimWorldPathTXT = "$script:path_vscode\RimWorldPath.txt"
-$script:file_thirdPartyDependenciesTXT = "$script:path_vscode\ThirdPartyDependencies.txt"
+$script:file_thirdPartyDependenciesPS1 = "$script:path_vscode\ThirdPartyDependencies.ps1"
 $script:file_modcsproj = "$script:path_vscode\RimWorld_Mod.csproj"
 
 # Predefine Variable
@@ -106,9 +105,12 @@ function CopyDependencies {
         Write-Host " -> All files skipped (already exist)"
     }
 
+
     # import third party dependencies
     Write-Host "Import ThirdPartyDependencies"
-    . "$script:path_vscode\ThirdPartyDependencies.ps1"
+    
+    # import $depsPaths variable from ThirdPartyDependencies.ps1
+    .$script:file_thirdPartyDependenciesPS1
     
     if ([string]::IsNullOrEmpty($depsPaths)) {
         Write-Host " -> No ThirdParty Dependencies"
