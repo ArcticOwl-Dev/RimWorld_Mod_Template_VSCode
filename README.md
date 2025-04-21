@@ -38,6 +38,11 @@ Errors and missing dependencies are solved on first build
 3. Build Mod `CTRL + SHIFT + B` or run task `build` in [Task Explorer](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-taskexplorer)
 4. Start RimWorld
 
+#### Troubleshooting
+
+- **ThirdPartyDependencies**: Ensure paths to third-party DLLs in `ThirdPartyDependencies.ps1` are correctly specified and enclosed in quotes.
+- **Environment variables**: Verify that the environment variable for RimWorld, `RimWorldInstallationPath`, is correctly configured. If the path is not set, the script will prompt you to set one. If the game is installed in the standard Steam folder on C:, the environment variable is set automatically.
+
 ## Additional notes
 
 ### Folder structure
