@@ -4,32 +4,38 @@
     {
       "label": "clean",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'Clean'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "Clean"]
     },
     {
       "label": "_copyDependencies",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'CopyDependencies'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "CopyDependencies"]
     },
     {
       "label": "_compile",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'Compile'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "Compile"]
     },
     {
       "label": "_compile [dev]",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'Compile' -VSConfiguration 'DEBUG'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "Compile", "-VSConfiguration", "DEBUG"]
     },
     {
       "label": "_postbuild",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'PostBuild'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "PostBuild"]
     },
     {
       "label": "build",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'Build'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "Build"],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -38,32 +44,38 @@
     {
       "label": "build [dev]",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'Build' -VSConfiguration 'DEBUG'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "Build", "-VSConfiguration", "DEBUG"]
     },
     {
       "label": "start RimWorld",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'StartRimWorld'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "StartRimWorld"]
     },
     {
       "label": "start RimWorld -quicktest",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'StartRimWorldQuickTest'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "StartRimWorldQuickTest"]
     },
     {
-      "label": "install RimWorld debug ",
+      "label": "install RimWorld debug",
       "type": "shell",
-      "command": ".vscode/RimWorldDebug.ps1 -Command 'InstallRimWorldDebug'"
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build_utility_debug.ps1", "-Command", "InstallRimWorldDebug"]
     },
     {
-      "label": "remove RimWorld debug ",
+      "label": "remove RimWorld debug",
       "type": "shell",
-      "command": ".vscode/RimWorldDebug.ps1 -Command 'RemoveRimWorldDebug'"
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build_utility_debug.ps1", "-Command", "RemoveRimWorldDebug"]
     },
     {
       "label": "start dnSPY",
       "type": "shell",
-      "command": ".vscode/build.ps1 -Command 'StartDNSPY'",
+      "command": "${workspaceFolder}/.vscode/build_shell_selector.cmd",
+      "args": [".vscode/build.ps1", "-Command", "StartDNSPY"]
     }
   ]
 }

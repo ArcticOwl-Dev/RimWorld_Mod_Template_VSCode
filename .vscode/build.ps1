@@ -25,7 +25,7 @@ $script:path_localDependencies = "$script:path_projectroot\localDependencies"
 $script:path_mod_structure = "$script:path_projectroot\mod-structure"
 
 # Set file paths
-$script:file_helperscriptPS1 = "$script:path_vscode\helperscript.ps1"
+$script:file_helperscriptPS1 = "$script:path_vscode\build_utility.ps1"
 $script:file_thirdPartyDependenciesPS1 = "$script:path_vscode\ThirdPartyDependencies.ps1"
 $script:file_modcsproj = "$script:path_vscode\RimWorld_Mod.csproj"
 
@@ -44,8 +44,9 @@ $script:ModName = ""
 function Clean {
     RemoveItem $script:path_assemblyOutput
     RemoveItem $script:path_modOutput
-    RemoveItem "$script:path_localDependencies\*"
+    RemoveItem "$script:path_localDependencies"
     RemoveItem "$script:path_projectroot\.vscode\obj"
+    RemoveItem "$script:path_projectroot\.vscode\bin"
     RemoveItem "$script:path_projectroot\.vscode\debugFiles"
 }
 

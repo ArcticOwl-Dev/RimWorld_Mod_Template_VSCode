@@ -458,7 +458,8 @@ function RemoveItem() {
         [switch]
         $silent = $false
     )
-
+    
+    $i = 0
     while ($true) {
         if (!(Test-Path $path)) {
             return
@@ -468,7 +469,7 @@ function RemoveItem() {
         }
 
         try {
-            $i = 0
+
             Remove-Item -Recurse $path -Force
             break
         }

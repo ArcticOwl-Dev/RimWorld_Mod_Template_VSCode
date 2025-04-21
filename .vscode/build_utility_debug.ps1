@@ -12,8 +12,8 @@ $ErrorActionPreference = "Stop"
 
 #Define Folders and Files
 $script:dir_debugFiles = "$PSScriptRoot\debugFiles"
-$script:file_helperscriptPS1 = "$PSScriptRoot\helperscript.ps1"
-$script:file_RimWorldPathTXT = "$PSScriptRoot\RimWorldPath.txt"
+$script:file_helperscriptPS1 = "$PSScriptRoot\build_utility.ps1"
+
 
 $script:file_doorstopDLL = "$script:dir_debugFiles\Doorstop.dll"
 $script:file_winhttpDLL = "$script:dir_debugFiles\winhttp.dll"
@@ -178,7 +178,7 @@ function ModifyDoorstopConfig {
 # Move Files to RimWorld installation
 function CopyDebugFilesToRimWorldFolder {
     Write-Host -ForegroundColor Blue "`r`nMove Files to RimWorld"
-    $dir_RimWorldInstallation = GetRimWorldInstallationPath -RimWorldPathTXT $script:file_RimWorldPathTXT
+    $dir_RimWorldInstallation = GetRimWorldInstallationPath 
     
     Copy-Item -Force -Path $script:file_doorstopDLL -Destination $dir_RimWorldInstallation 
     Copy-Item -Force -Path $script:file_winhttpDLL -Destination $dir_RimWorldInstallation 
@@ -199,7 +199,7 @@ function InstallRimWorldDebug {
 
 function RemoveRimWorldDebug {
     Write-Host -ForegroundColor Blue "Remove debug files"
-    $RimWorldPath = GetRimWorldInstallationPath -RimWorldPathTXT $script:file_RimWorldPathTXT
+    $RimWorldPath = GetRimWorldInstallationPath 
 
     $fileName = Split-Path $script:file_doorstopDLL -Leaf
     RemoveItem -Path "$RimWorldPath\$fileName"
