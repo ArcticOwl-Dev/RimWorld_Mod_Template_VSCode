@@ -551,6 +551,7 @@ function GetRimWorldInstallationPath {
         return $StandardRimWorldInstallationPath
     }
 
+    Write-Host " -> RimWorld installation not found; Need Enviroment variable 'RimWorldInstallationPath'"
     if ((Read-Host "Do you want to create a new environment variable for the RimWorld installation path? (y/n)") -eq "y") {
          
         for ($i = 0; $i -lt 3; $i++) {
