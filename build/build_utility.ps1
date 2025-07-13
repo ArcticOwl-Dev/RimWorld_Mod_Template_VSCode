@@ -462,10 +462,11 @@ function RemoveItem() {
     $i = 0
     while ($true) {
         if (!(Test-Path $path)) {
+            Write-Host " -> Not found: $path"
             return
         }
         if (!($silent)) {
-            Write-Host " Deleting $path"
+            Write-Host " -> Deleting: $path"
         }
 
         try {
@@ -476,10 +477,10 @@ function RemoveItem() {
         catch {
             $i++
             if ($i -gt 10) { 
-                Write-Host "Could not remove $path, skip file"
+                Write-Host " -> Could not remove $path, skip file"
                 break 
             }
-            Write-Host "Could not remove $path, will retry"
+            Write-Host " -> Could not remove $path, will retry"
             Start-Sleep 3
         }
     }
@@ -604,4 +605,5 @@ function GetDNSPYPath {
     exit "dnSPY installation not found"
 
 }
+
 

@@ -7,7 +7,11 @@ param
 
     [Parameter(Mandatory = $false)]
     [string]
-    $VSConfiguration = "Release"
+    $VSConfiguration = "Release",
+
+    [Parameter(Mandatory = $false)]
+    [string]
+    $NewModName = ""
 
 )
 
@@ -16,18 +20,22 @@ $ErrorActionPreference = "Stop"
 
 
 # Set folder paths
-$script:path_vscode = "$PSScriptRoot"
-$script:path_projectRoot = Resolve-Path "$script:path_vscode\.."
-$script:path_assemblyOutput = "$script:path_vscode\bin"
-$script:path_modOutput = "$script:path_projectroot\output"
-$script:path_src = "$script:path_projectroot\src"
-$script:path_localDependencies = "$script:path_projectroot\localDependencies"
-$script:path_mod_structure = "$script:path_projectroot\mod-structure"
+$script:path_build = "$PSScriptRoot"
+$script:path_solutionRoot = Resolve-Path "$script:path_build\.."
+$script:path_modOutput = "$script:path_solutionRoot\out"
+$script:path_src = "$script:path_solutionRoot\src"
+$script:path_localDependencies = "$script:path_solutionRoot\lib"
+$script:path_mod_structure = "$script:path_solutionRoot\mod-structure"
 
 # Set file paths
-$script:file_helperscriptPS1 = "$script:path_vscode\build_utility.ps1"
-$script:file_thirdPartyDependenciesPS1 = "$script:path_vscode\ThirdPartyDependencies.ps1"
-$script:file_modcsproj = "$script:path_vscode\RimWorld_Mod.csproj"
+$script:file_helperscriptPS1 = "$script:path_build\build_utility.ps1"
+$script:file_thirdPartyDependenciesPS1 = "$script:path_build\ThirdPartyDependencies.ps1"
+$script:file_modcsproj = Get-ChildItem -Path "$script:path_src" -Filter "*.csproj" -Recurse -ErrorAction Stop
+
+# More folder paths
+$script:path_project = $script:file_modcsproj.DirectoryName
+$script:path_assemblyOutput = "$script:path_project\bin"
+
 
 # Predefine Variable
 $script:path_RimWorldInstallation = ""
@@ -42,12 +50,14 @@ $script:ModName = ""
 
 # can be called by tasks.json from vscode
 function Clean {
+    Write-Host -ForegroundColor Blue "`r`n#### Clean ####"
     RemoveItem $script:path_assemblyOutput
     RemoveItem $script:path_modOutput
     RemoveItem "$script:path_localDependencies"
-    RemoveItem "$script:path_projectroot\.vscode\obj"
-    RemoveItem "$script:path_projectroot\.vscode\bin"
-    RemoveItem "$script:path_projectroot\.vscode\debugFiles"
+    RemoveItem "$script:path_build\debugFiles"
+    $project_path = $script:file_modcsproj.DirectoryName
+    RemoveItem "$project_path\bin"
+    RemoveItem "$project_path\obj"
 }
 
 # can be called by tasks.json from vscode
@@ -60,7 +70,7 @@ function Compile {
         Write-Host -ForegroundColor Red " -> No local dependencies `r`n -> Run Task 'CopyDependencies'"
     }
     RemoveItem $script:path_assemblyOutput
-    dotnet build $script:file_modcsproj --output "$script:path_assemblyOutput" --configuration "$VSConfiguration"
+    dotnet build $script:file_modcsproj --configuration "$VSConfiguration"
 
     if ($LASTEXITCODE -ne 0) {
         exit
@@ -269,6 +279,7 @@ function StartRimWorldQuickTest {
     Start-Process -FilePath "$script:path_RimWorldInstallation\RimWorldWin64.exe" -ArgumentList "-quicktest" 
 }
 
+# can be called by tasks.json from vscode
 function StartDNSPY {
     if ([string]::IsNullOrEmpty($script:path_RimWorldInstallation)) {
         $script:path_RimWorldInstallation = GetRimWorldInstallationPath 
@@ -293,6 +304,124 @@ function Build {
     Write-Host -ForegroundColor Green "`r`nBUILD SUCCESSFUL`r`n"
 }
 
+# can be called by tasks.json from vscode
+function ChangeModName {
+
+    Write-Host -ForegroundColor Blue "`r`n#### ChangeModName ####"
+    if ([string]::IsNullOrEmpty($newModName)) {
+        Write-Host -ForegroundColor Red " -> new ModName is empty"
+        exit;
+    }
+    elseif ($newModName -match '[^a-zA-Z0-9]' -or $newModName -match '^[0-9]') {
+        Write-Host -ForegroundColor Red " -> new ModName contains invalid characters"
+        Write-Host " -> alphanumeric only, must not start with a number, no spaces or special characters"
+        exit;
+    }
+
+    $script:ModName = $newModName
+
+
+    # Rename .sln file
+    $slnFile = Get-ChildItem -Path "$script:path_solutionRoot" -Filter "*.sln"
+    if (-not $slnFile) {
+        Write-Host -ForegroundColor Red " -> .sln file not found"
+    }
+    elseif ($slnFile.Name -eq "$newModName.sln") {
+        Write-Host -ForegroundColor Yellow " -> .sln file is already named $newModName.sln"
+    }
+    else {
+        Rename-Item -Path $slnFile.FullName -NewName "$newModName.sln"
+        Write-Host " -> .sln file renamed to $newModName.sln"
+    }
+
+    # Rename project folder in src
+    $projectFolder = Get-ChildItem -Path "$script:path_src" -Directory
+    if (-not $projectFolder) {
+        Write-Host -ForegroundColor Red " -> project folder in $script:path_src not found"
+    }
+    elseif ($projectFolder.Name -eq $newModName) {
+        Write-Host -ForegroundColor Yellow " -> project folder is already named $newModName"
+    }
+    else {
+        Rename-Item -Path $projectFolder.FullName -NewName "$newModName"
+        Write-Host " -> project folder renamed to $newModName"
+    }
+
+    # Rename .csproj file in src
+    $script:file_modcsproj = Get-ChildItem -Path "$script:path_src" -Filter "*.csproj" -Recurse -ErrorAction Stop
+    $expectedCsprojPath = "$script:path_src\$newModName\$newModName.csproj"
+    if (-not $script:file_modcsproj) {
+        Write-Host -ForegroundColor Red " -> .csproj file in $script:path_src not found"
+    }
+    elseif ($script:file_modcsproj.FullName -eq $expectedCsprojPath) {
+        Write-Host -ForegroundColor Yellow " -> .csproj file is already named $newModName.csproj"
+    }
+    else {
+        Rename-Item -Path $script:file_modcsproj.FullName -NewName "$newModName.csproj"
+        Write-Host " -> .csproj file renamed to $newModName.csproj"
+        $script:file_modcsproj = Get-ChildItem -Path "$script:path_src" -Filter "*.csproj" -Recurse -ErrorAction Stop
+    }
+
+
+    # Change content in .sln file to new ModName
+    $slnFileContent = Get-Content -Path "$script:path_solutionRoot\$newModName.sln" -Raw
+
+    # update project line with new name, path and GUID
+    $newGuid = [System.Guid]::NewGuid().ToString("B").ToUpper()
+    $csprojRelativePath = [IO.Path]::GetRelativePath($script:path_solutionRoot, $script:file_modcsproj.FullName)
+    $newProjectLine = "Project(`"{9A19103F-16F7-4668-BE54-9A1E7A4F7556}`") = `"$newModName`", `"$csprojRelativePath`", `"$newGuid`""
+    $slnFileContent_updated = $slnFileContent -replace 'Project\("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}"\) = "[^"]+", "[^"]+", "{[^}]+}"', $newProjectLine
+
+    # Also update the ProjectConfigurationPlatforms section with the new GUID
+    $oldGuid = [regex]::Match($slnFileContent, 'Project\("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}"\) = "[^"]+", "[^"]+", "({[^}]+})"').Groups[1].Value
+    $slnFileContent_updated = $slnFileContent_updated -replace [regex]::Escape($oldGuid), $newGuid
+
+    # Generate new solution GUID
+    $newGuid = [System.Guid]::NewGuid().ToString("B").ToUpper()
+    $newSolutionLine = "SolutionGuid = $newGuid"
+    $slnFileContent_updated = $slnFileContent_updated -replace 'SolutionGuid = \{[A-F0-9\-]+\}', $newSolutionLine
+
+    # Write the updated content back to the file
+    $slnFileContent_updated | Out-File -FilePath "$script:path_solutionRoot\$newModName.sln" -Encoding UTF8
+    Write-Host " -> .sln file updated"
+
+
+    # Change content in .csproj file to new ModName (load as XML)
+    [xml]$csproj = Get-Content $script:file_modcsproj.FullName
+    $csproj.Project.PropertyGroup[0].AssemblyName = $newModName
+    $csproj.Project.PropertyGroup[0].RootNamespace = $newModName
+    $csproj.Save($script:file_modcsproj)
+    Write-Host " -> .csproj file updated"
+
+
+    # Change content in Main.cs to new ModName
+    $mainFile = Get-ChildItem -Path "$script:path_src\$newModName" -Filter "Main.cs"
+    if ($mainFile) {
+        $mainFileContent = Get-Content -Path $mainFile -Raw
+        # Replace the string inside Log.Message("...") for the "Mod Template Loaded!" message
+        $newMessage = 'Log.Message("Mod ' + $newModName + ' Loaded!");'
+        $mainFileContent = $mainFileContent -replace 'Log\.Message\("Mod[^"]*Loaded!"\);', $newMessage
+        # Replace the namespace name with the new ModName
+        $mainFileContent = $mainFileContent -replace '(?<=namespace\s+)[^\s{]+', $newModName
+        $mainFileContent | Out-File -FilePath $mainFile.FullName -Encoding UTF8
+    }
+    Write-Host " -> Main.cs file updated"
+
+    # Change name in about.xml file in mod-structure (read as XML)
+    $aboutFile = Get-ChildItem -Path "$script:path_mod_structure\About\About.xml"
+    if ($aboutFile) {
+        [xml]$aboutFileContent = Get-Content -Path $aboutFile
+        $aboutFileContent.ModMetaData.name = $newModName
+        $aboutFileContent.Save($aboutFile)
+    }
+    Write-Host " -> About.xml file updated"
+    Write-Host -ForegroundColor Green "All files updated to new ModName: $newModName"    
+    Write-Host "`r`n"
+
+    Clean
+    dotnet clean $script:file_modcsproj
+    Write-Host -ForegroundColor Green "Project cleaned"
+}
 
 
 & $Command

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <!-- Modify [RootNamespace], [AssemblyName] to your mod name -->
+    <RootNamespace>MyRimWorldMod</RootNamespace>
+    <AssemblyName>MyRimWorldMod</AssemblyName>
+    <!-- Modify [VersionPrefix] to your mod Version-->
+    <VersionPrefix>1.5.0.0</VersionPrefix>
+    <!-- Do not generate pdb file -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <!-- Possible to compile spezific code only on configuration debug `#if DEBUG` and `#endif`  -->
+    <DefineConstants>DEBUG</DefineConstants>
+    <!-- generate pdb file for debugging-->
+    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Rimworld -->
+    <Reference Include="..\..\lib\*.dll">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="powershell -ExecutionPolicy Bypass -NoProfile -File $(SolutionDir)\build\build.ps1 -Command CopyDependencies" />
+  </Target>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="powershell -ExecutionPolicy Bypass -NoProfile -File $(SolutionDir)\build\build.ps1 -Command PostBuild" />
+  </Target>
+</Project>

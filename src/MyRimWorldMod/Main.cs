@@ -1,10 +1,9 @@
-﻿
 using Verse;
 
 // *Uncomment for Harmony*
 // using HarmonyLib;
 
-namespace Template
+namespace MyRimWorldMod
 {
     public class Mod : Verse.Mod
     {
@@ -14,8 +13,8 @@ namespace Template
         /// <param name="content"></param>
         public Mod(ModContentPack content) : base(content)
         {
-            Log.Message("Mod Loaded!");
-            Log.Warning("!");
+            Log.Message("Mod MyRimWorldMod Loaded!");
+            Log.Warning("Warning Message!");
 
 #if DEBUG
             Log.Message("Debug Message!");
@@ -25,3 +24,17 @@ namespace Template
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
