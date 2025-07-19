@@ -51,33 +51,19 @@ $script:ModName = ""
 # can be called by tasks.json from vscode
 function Clean {
     Write-Host -ForegroundColor Blue "`r`n#### Clean ####"
-    RemoveItem $script:path_assemblyOutput
-    RemoveItem $script:path_modOutput
+    
+    RemoveItem "$script:path_assemblyOutput"
+    RemoveItem "$script:path_modOutput"
     RemoveItem "$script:path_localDependencies"
     RemoveItem "$script:path_build\debugFiles"
-    $project_path = $script:file_modcsproj.DirectoryName
-    RemoveItem "$project_path\bin"
-    RemoveItem "$project_path\obj"
+    RemoveItem "$script:path_project\bin"
+    RemoveItem "$script:path_project\obj"
+    
+    Write-Host " -> Clean completed.`r`n"
 }
 
 # can be called by tasks.json from vscode
-function Compile {
-    Write-Host -ForegroundColor Blue "`r`n#### Compiling ####"
-    If (!(Test-Path $script:path_src\*)) {
-        Write-Host " -> No files in $script:path_src `r`n -> Skipping compiling"
-    }
-    if (!(Test-Path $script:path_localDependencies\*)) {
-        Write-Host -ForegroundColor Red " -> No local dependencies `r`n -> Run Task 'CopyDependencies'"
-    }
-    RemoveItem $script:path_assemblyOutput
-    dotnet build $script:file_modcsproj --configuration "$VSConfiguration"
-
-    if ($LASTEXITCODE -ne 0) {
-        exit
-    }
-}
-
-# can be called by tasks.json from vscode
+# automatically called when building by .csproj [InitialTargets="CopyDependencies"]
 function CopyDependencies {
     Write-Host -ForegroundColor Blue "`r`n#### Checking Dependencies ####"
 
@@ -145,6 +131,29 @@ function CopyDependencies {
             Write-Host -ForegroundColor Yellow " -> File does not exist: $depPath"
         }
     }
+
+}
+
+# automatically called when building by .csproj [InitialTargets="CopyDependencies"]
+function PreBuild {
+    Write-Host -ForegroundColor Blue "`r`n#### PreBuild ####"
+    RemoveItem $script:path_assemblyOutput
+}
+
+# can be called by tasks.json from vscode
+function Build {
+
+    CopyDependencies
+
+    Write-Host -ForegroundColor Blue "`r`n#### Build ####"
+    
+    dotnet build $script:file_modcsproj --verbosity detailed
+
+    Write-Host "`r`n"
+
+    if ($LASTEXITCODE -ne 0) {
+        exit
+    }
 }
 
 # subcomponents from PostBuild
@@ -177,21 +186,42 @@ function CopyAssemblyFile {
 }
 
 # subcomponents from PostBuild
-function CopyFilesToRimworld {
-    Write-Host "`r`nCopy files to RimWorld mod folder"
-    if ([string]::IsNullOrEmpty($script:path_RimWorldInstallation)) {
-        $script:path_RimWorldInstallation = GetRimWorldInstallationPath 
-    }
+function CreateModFolder {
+
+    # Copy mod-structure to path_modOutput
+    Write-Host "`r`nCreating mod folder"
+
     if ([string]::IsNullOrEmpty($script:ModName)) {
         $script:ModName = GetModName -file_modcsproj $script:file_modcsproj 
     }
+    Write-Host " -> $script:path_modOutput\$script:ModName"
 
-    $modsPath = "$script:path_RimWorldInstallation\Mods"
-    $thisModPath = "$modsPath\$script:ModName"
-    RemoveItem $thisModPath -silent
+    RemoveItem("$script:path_modOutput") -silent
+    mkdir "$script:path_modOutput\$script:ModName" | Out-Null
+    
 
-    Write-Host " -> $thismodPath"
-    Copy-Item -Recurse -Force "$script:path_modOutput\$script:ModName" $modsPath
+    if ($VSConfiguration -eq "Release") {
+        # Copy all files except .pdb files when building in Release mode
+        Copy-Item -Recurse -Force "$script:path_mod_structure\*" "$script:path_modOutput\$script:ModName\" -Exclude "*.pdb"
+    }
+    else {
+        Copy-Item -Recurse -Force "$script:path_mod_structure\*" "$script:path_modOutput\$script:ModName\" 
+        $AboutFilePath = "$script:path_modOutput\$script:ModName\About\About.xml"
+
+        # Get the current timestamp in the desired format
+        $timestamp = Get-Date -Format "HH:mm - dd.MM.yyyy"
+
+        # Read the file content
+        [xml]$AboutFile = Get-Content -Path $AboutFilePath
+
+        # Modify the <description> element by adding current timestamp at the beginning
+        $AboutFile.ModMetaData.description = "Buildtime: $timestamp `r`n" + $AboutFile.ModMetaData.description
+
+        # Save the modified XML back to the file
+        $AboutFile.Save($AboutFilePath)
+
+        Write-Host " -> About file updated with buildtime."
+    }
 }
 
 # subcomponents from PostBuild
@@ -218,40 +248,25 @@ function CreateModZipFile {
 }
 
 # subcomponents from PostBuild
-function CreateModFolder {
-
-    # Copy mod-structure to path_modOutput
-    Write-Host "`r`nCreating mod folder"
-
+function CopyFilesToRimworld {
+    Write-Host "`r`nCopy files to RimWorld mod folder"
+    if ([string]::IsNullOrEmpty($script:path_RimWorldInstallation)) {
+        $script:path_RimWorldInstallation = GetRimWorldInstallationPath 
+    }
     if ([string]::IsNullOrEmpty($script:ModName)) {
         $script:ModName = GetModName -file_modcsproj $script:file_modcsproj 
     }
-    Write-Host " -> $script:path_modOutput\$script:ModName"
 
-    RemoveItem("$script:path_modOutput") -silent
-    mkdir "$script:path_modOutput\$script:ModName" | Out-Null
-    Copy-Item -Recurse -Force "$script:path_mod_structure\*" "$script:path_modOutput\$script:ModName\"
+    $modsPath = "$script:path_RimWorldInstallation\Mods"
+    $thisModPath = "$modsPath\$script:ModName"
+    RemoveItem $thisModPath -silent
 
-    if ($VSConfiguration -eq "Debug") {
-        $AboutFilePath = "$script:path_modOutput\$script:ModName\About\About.xml"
-
-        # Get the current timestamp in the desired format
-        $timestamp = Get-Date -Format "HH:mm - dd.MM.yyyy"
-
-        # Read the file content
-        [xml]$AboutFile = Get-Content -Path $AboutFilePath
-
-        # Modify the <description> element by adding current timestamp at the beginning
-        $AboutFile.ModMetaData.description = "Buildtime: $timestamp `r`n" + $AboutFile.ModMetaData.description
-
-        # Save the modified XML back to the file
-        $AboutFile.Save($AboutFilePath)
-
-        Write-Host " -> About file updated with buildtime."
-    }
+    Write-Host " -> $thismodPath"
+    Copy-Item -Recurse -Force "$script:path_modOutput\$script:ModName" $modsPath
 }
 
 # can be called by tasks.json from vscode
+# automatically called when building by .csproj [AfterTargets="PostBuildEvent"]
 function PostBuild {
     Write-Host -ForegroundColor Blue "`r`n#### PostBuild ####"
 
@@ -259,7 +274,13 @@ function PostBuild {
     CreateModFolder
     CreateModZipFile
     CopyFilesToRimworld
+
+    Write-Host "`r`n"
 }
+
+
+
+# ADDITIONAL FUNCTIONS
 
 # can be called by tasks.json from vscode
 function StartRimWorld {
@@ -294,14 +315,6 @@ function StartDNSPY {
     Start-Sleep -Seconds 2
     Start-Process -FilePath $DnSpyPath -ArgumentList "--files `"$path_modDLL`" --no-activate"
 
-}
-
-# can be called by tasks.json from vscode
-function Build {
-    CopyDependencies
-    Compile
-    PostBuild
-    Write-Host -ForegroundColor Green "`r`nBUILD SUCCESSFUL`r`n"
 }
 
 # can be called by tasks.json from vscode
@@ -366,20 +379,29 @@ function ChangeModName {
     # Change content in .sln file to new ModName
     $slnFileContent = Get-Content -Path "$script:path_solutionRoot\$newModName.sln" -Raw
 
-    # update project line with new name, path and GUID
-    $newGuid = [System.Guid]::NewGuid().ToString("B").ToUpper()
-    $csprojRelativePath = [IO.Path]::GetRelativePath($script:path_solutionRoot, $script:file_modcsproj.FullName)
-    $newProjectLine = "Project(`"{9A19103F-16F7-4668-BE54-9A1E7A4F7556}`") = `"$newModName`", `"$csprojRelativePath`", `"$newGuid`""
-    $slnFileContent_updated = $slnFileContent -replace 'Project\("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}"\) = "[^"]+", "[^"]+", "{[^}]+}"', $newProjectLine
-
-    # Also update the ProjectConfigurationPlatforms section with the new GUID
-    $oldGuid = [regex]::Match($slnFileContent, 'Project\("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}"\) = "[^"]+", "[^"]+", "({[^}]+})"').Groups[1].Value
-    $slnFileContent_updated = $slnFileContent_updated -replace [regex]::Escape($oldGuid), $newGuid
+    # update .sln file project line with new name, path and GUID
+    $oldProjectMatch = [regex]::Match($slnFileContent, 'Project\("(\{[A-F0-9\-]+\})"\) = "([^"]+)", "([^"]+)", "(\{[^}]+\})"')
+    if ($oldProjectMatch.Success) {
+        $projectTypeGuid = $oldProjectMatch.Groups[1].Value
+        $oldProjectGuid = $oldProjectMatch.Groups[4].Value
+        
+        $newGuid = [System.Guid]::NewGuid().ToString("B").ToUpper()
+        $csprojRelativePath = [IO.Path]::GetRelativePath($script:path_solutionRoot, $script:file_modcsproj.FullName)
+        $newProjectLine = "Project(`"$projectTypeGuid`") = `"$newModName`", `"$csprojRelativePath`", `"$newGuid`""
+        
+        $slnFileContent_updated = $slnFileContent -replace [regex]::Escape($oldProjectMatch.Value), $newProjectLine
+        
+        # Also update the ProjectConfigurationPlatforms section with the new GUID
+        $slnFileContent_updated = $slnFileContent_updated -replace [regex]::Escape($oldProjectGuid), $newGuid
+    }
+    else {
+        Write-Host -ForegroundColor Red " -> Could not find project line in .sln file"
+        return
+    }
 
     # Generate new solution GUID
-    $newGuid = [System.Guid]::NewGuid().ToString("B").ToUpper()
-    $newSolutionLine = "SolutionGuid = $newGuid"
-    $slnFileContent_updated = $slnFileContent_updated -replace 'SolutionGuid = \{[A-F0-9\-]+\}', $newSolutionLine
+    $newSolutionGuid = [System.Guid]::NewGuid().ToString("B").ToUpper()
+    $slnFileContent_updated = $slnFileContent_updated -replace 'SolutionGuid = \{[A-F0-9\-]+\}', "SolutionGuid = $newSolutionGuid"
 
     # Write the updated content back to the file
     $slnFileContent_updated | Out-File -FilePath "$script:path_solutionRoot\$newModName.sln" -Encoding UTF8
@@ -420,6 +442,7 @@ function ChangeModName {
 
     Clean
     dotnet clean $script:file_modcsproj
+
     Write-Host -ForegroundColor Green "Project cleaned"
 }
 

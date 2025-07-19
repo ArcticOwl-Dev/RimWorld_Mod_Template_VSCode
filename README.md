@@ -1,12 +1,7 @@
 # RimWorld Mod Template
 
-This template is created for RimWorld modders who use [Visual Studio Code](https://code.visualstudio.com/) instead of Visual Studio IDE.
-
-- **Lightweight**. Visual Studio Code takes up to 200 MB of storage space and is lightning fast.
-
-- **Automated**. Integrated build, PowerShell scripts perform common tasks.
-
-- **Debug RimWorld**. Includes script to enable debugging RimWorld and your mod.
+This template is created for RimWorld modders who use [Visual Studio Code](https://code.visualstudio.com/)
+[also compatible with Visual Studio 2022.]
 
 ## Setup
 
@@ -20,44 +15,49 @@ This template is created for RimWorld modders who use [Visual Studio Code](https
 
 3. Install VS Code Extensions:
 
-   - [C# extension](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp) - Basic C# support.
 
-   Optional extensions:
+   - [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit)
+   - [Task Explorer](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-taskexplorer)
 
-   - [Task Explorer](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-taskexplorer) - Easy UI for running tasks.
-   - [ilspy-vscode](https://marketplace.visualstudio.com/items?itemName=icsharpcode.ilspy-vscode) - Decompile RimWorld .dlls.
-   - [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) - Solution Explorer.
-   - [IntelliCode for C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.vscodeintellicode-csharp) - Auto completion.
+    or when on a Visual Studio Code fork: 
+    - [DotRush](https://open-vsx.org/extension/nromanov/dotrush)
+    - [Task Manager](https://open-vsx.org/extension/cnshenj/vscode-task-manager)
+
 
 ## First Steps
-
 Errors and missing dependencies are solved on the first build.
 
-1. Change .vscode\RimWorld_Mod.csproj [RootNamespace], [AssemblyName], and [VersionPrefix].
-2. Change mod-structure\About\About.xml.
-3. Build Mod `CTRL + SHIFT + B` or run task `build` in [Task Explorer](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-taskexplorer).
-4. Start RimWorld.
+1. Run task `_change mod name` to set a new name for your mod
+    <details>
+      <summary>or manually change mod name </summary>
+      
+      - Update the mod name in `About.xml`
+      - Rename the project folder in `src`
+      - Change the namespace in `Main.cs`
+      - Rename the `.csproj` file
+      - Update `Rootspace` and `AssemblyName` in the `.csproj` file
+      - Rename the `.sln` file
+      - Update the project name in the `.sln` file
+    </details>
+2. Build Mod `CTRL + SHIFT + B` or run task `build` in [Task Explorer](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-taskexplorer).
+3. Start RimWorld.
 
 #### Troubleshooting
 
-- **ThirdPartyDependencies**: Ensure paths to third-party DLLs in `ThirdPartyDependencies.ps1` are correctly specified and enclosed in quotes.
+- **ThirdPartyDependencies**: Ensure paths to third-party DLLs in `build\ThirdPartyDependencies.ps1` are correctly specified and enclosed in quotes.
 - **Environment variables**: Verify that the environment variable for RimWorld, `RimWorldInstallationPath`, is correctly configured. If the path is not set, the script will prompt you to set one. If the game is installed in the standard Steam folder on C:, the environment variable is set automatically.
 
 ## Additional notes
 
-### Folder structure
+<b>Change Configuration: </b>
+  - Click in the Status Bar on the `Debug` or `Release` label. 
+  - VS Code popup shows up, that lets you choose between the available configurations.
 
-- `.vscode` - Folder for build scripts and mod settings.
-  - `RimWorld_Mod.csproj` - File for setting basic mod settings: **mod name** and **mod version**.
-  - `ThirdPartyDependencies.ps1` - Add path to third party .dll files if your mod needs some (like Harmony). Surround path with quotes [ **"** ].
-  - `RimWorld_Mod.sln` - Solution File -> no edit needed.
-  - `extension.json` - Recommends extensions in VS Code if they're not installed.
-  - `task.json` - Configure tasks which can be run in VS Code.
-  - `*.ps1` - PowerShell scripts to automate tasks.
-- `localDependencies` - RimWorld Dependencies (\*.dll) are automatically imported, third-party dependencies can be imported by including the path in the file ThirdPartyDependencies.ps1.
-- `mod-structure` - Basic mod folder. Edit About, Defs, Textures, ...
-- `output` - After the build process, the mod is placed in this folder, plus a `.zip` version of the mod.
-- `src` - Folder for all code that should be compiled. (.cs files)
+
+<b>Difference between Release and Debug Configuration:</b>
+  - Generate .pdb files for debugging.
+  - Compile code within the statements `#if DEBUG` and `#endif`.
+  - Add a build timestamp in the about.xml file.
 
 ### Tasks & Scripts
 
@@ -65,25 +65,22 @@ Main tasks for automation:
 
 - `build` - Standard task for building your mod.
   Includes tasks: copyDependencies + compile + postbuild.
-- `build [dev]` - Same as `build`, but with some extra features:
-  - Generate .pdb files for debugging.
-  - Compile code within the statements `#if DEBUG` and `#endif`.
-  - Add a build timestamp in the about.xml file.
 - `clean` - Removes temp files that are created by the build process.
 - `start dnSPY` - Launches dnSPY with the current dll file.
 - `start RimWorld` - Task that starts RimWorld directly from VS Code.
 - `start RimWorld -quicktest` - Starts RimWorld and loads dev quicktest map.
 
-Tasks beginning with `_` are part of the build task but can be run separately if needed.
 
 ### Decompile Assembly
+
+Click while holding `CTRL` on imported RimWorld function to see them decompiled.  
+Example: `CTRL` + `CLICK` on `Log` in `Main.cs` -> `Log.cs` from `Assembly-CSharp.dll` opens.
 
 With [ilspy-vscode](https://marketplace.visualstudio.com/items?itemName=icsharpcode.ilspy-vscode) extension it's possible to decompile the Assemblies directly in VS Code.  
 Right-click on `Assembly-CSharp.dll` in `localDependencies` and select `Decompile selected assembly`.  
 Now you can see the ilspy window with the decompiled assembly which includes the important RimWorld functions.
+Alternatively, use an external program like [dnSpy](https://github.com/dnSpyEx/dnSpy)
 
-Or click while holding `CTRL` on imported RimWorld function to see them decompiled.  
-Example: `CTRL` + `CLICK` on `Log` in `Main.cs` -> `Log.cs` from `Assembly-CSharp.dll` opens.
 
 ### Debug
 

@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34407.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyRimWorldMod", "src\MyRimWorldMod\MyRimWorldMod.csproj", "{59E80A22-72FE-477A-9D44-C446D2098EF9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyRimWorldMod", "src\MyRimWorldMod\MyRimWorldMod.csproj", "{83238E68-6AC0-4A5D-ADE0-4E9DFDF1363C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,15 +10,17 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{59E80A22-72FE-477A-9D44-C446D2098EF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{59E80A22-72FE-477A-9D44-C446D2098EF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{59E80A22-72FE-477A-9D44-C446D2098EF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{59E80A22-72FE-477A-9D44-C446D2098EF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83238E68-6AC0-4A5D-ADE0-4E9DFDF1363C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83238E68-6AC0-4A5D-ADE0-4E9DFDF1363C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83238E68-6AC0-4A5D-ADE0-4E9DFDF1363C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83238E68-6AC0-4A5D-ADE0-4E9DFDF1363C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {FEC155EA-26A4-4DCA-BA92-F60E64BCAF2E}
+		SolutionGuid = {E6B58D0B-C3DA-46FF-8CCB-80EF8B4B2B95}
 	EndGlobalSection
 EndGlobal
+
+

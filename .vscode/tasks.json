@@ -22,28 +22,6 @@
       ]
     },
     {
-      "label": "_compile",
-      "type": "shell",
-      "command": "${workspaceFolder}/build/build_shell_selector.cmd",
-      "args": [
-        "build/build.ps1",
-        "-Command",
-        "Compile"
-      ]
-    },
-    {
-      "label": "_compile [dev]",
-      "type": "shell",
-      "command": "${workspaceFolder}/build/build_shell_selector.cmd",
-      "args": [
-        "build/build.ps1",
-        "-Command",
-        "Compile",
-        "-VSConfiguration",
-        "DEBUG"
-      ]
-    },
-    {
       "label": "_postbuild",
       "type": "shell",
       "command": "${workspaceFolder}/build/build_shell_selector.cmd",
@@ -66,18 +44,6 @@
         "kind": "build",
         "isDefault": true
       }
-    },
-    {
-      "label": "build [dev]",
-      "type": "shell",
-      "command": "${workspaceFolder}/build/build_shell_selector.cmd",
-      "args": [
-        "build/build.ps1",
-        "-Command",
-        "Build",
-        "-VSConfiguration",
-        "DEBUG"
-      ]
     },
     {
       "label": "start RimWorld",
@@ -130,7 +96,7 @@
       ]
     },
     {
-      "label": "change mod name",
+      "label": "_change mod name",
       "type": "shell",
       "command": "${workspaceFolder}/build/build_shell_selector.cmd",
       "args": [
