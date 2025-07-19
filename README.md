@@ -27,7 +27,7 @@ This template is created for RimWorld modders who use [Visual Studio Code](https
 ## First Steps
 Errors and missing dependencies are solved on the first build.
 
-1. Run task `_change mod name` to set a new name for your mod
+1. Run task `CONFIG-change mod name` to set a new name for your mod
     <details>
       <summary>or manually change mod name </summary>
       
@@ -36,8 +36,8 @@ Errors and missing dependencies are solved on the first build.
       - Change the namespace in `Main.cs`
       - Rename the `.csproj` file
       - Update `Rootspace` and `AssemblyName` in the `.csproj` file
-      - Rename the `.sln` file
-      - Update the project name in the `.sln` file
+      - Rename the `.slnx` file
+      - Update the project path in the `.slnx` file
     </details>
 2. Build Mod `CTRL + SHIFT + B` or run task `build` in [Task Explorer](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-taskexplorer).
 3. Start RimWorld.
@@ -46,30 +46,45 @@ Errors and missing dependencies are solved on the first build.
 
 - **ThirdPartyDependencies**: Ensure paths to third-party DLLs in `build\ThirdPartyDependencies.ps1` are correctly specified and enclosed in quotes.
 - **Environment variables**: Verify that the environment variable for RimWorld, `RimWorldInstallationPath`, is correctly configured. If the path is not set, the script will prompt you to set one. If the game is installed in the standard Steam folder on C:, the environment variable is set automatically.
+- **Dependencies not found**: Verify that the RimWorld dll files are in the lib folder. Reload project by saving .csproj file.  
 
 ## Additional notes
-
-<b>Change Configuration: </b>
-  - Click in the Status Bar on the `Debug` or `Release` label. 
-  - VS Code popup shows up, that lets you choose between the available configurations.
-
-
-<b>Difference between Release and Debug Configuration:</b>
-  - Generate .pdb files for debugging.
-  - Compile code within the statements `#if DEBUG` and `#endif`.
-  - Add a build timestamp in the about.xml file.
 
 ### Tasks & Scripts
 
 Main tasks for automation:
 
-- `build` - Standard task for building your mod.
-  Includes tasks: copyDependencies + compile + postbuild.
-- `clean` - Removes temp files that are created by the build process.
-- `start dnSPY` - Launches dnSPY with the current dll file.
-- `start RimWorld` - Task that starts RimWorld directly from VS Code.
-- `start RimWorld -quicktest` - Starts RimWorld and loads dev quicktest map.
+- `RELEASE-build` - Standard task for building your mod.
+  Includes tasks: compile + postbuild.
+- `RELEASE-build & Start RimWorld` - Builds the mod and starts RimWorld
+- `RELEASE-postbuild` - Runs only the postbuild step (packaging, copying to RimWorld Mods folder, etc).
 
+- `UTILITY-clean` - Removes temp files that are created by the build process.
+- `UTILITY-copyDependencies` - Copies required RimWorld and third-party DLLs into your `lib` folder.
+
+- `LAUNCH_start dnSPY` - Launches dnSpy with the current dll file.
+- `LAUNCH_start RimWorld` - Task that starts RimWorld directly from VS Code.
+- `LAUNCH_start RimWorld -quicktest` - Starts RimWorld and loads dev quicktest map.
+
+Debug tasks:
+- `DEBUG-Build` - Debug build with .pdb files and debug symbols.
+- `DEBUG-Build & Start RimWorld` - Debug build and start RimWorld.
+- `DEBUG-Postbuild` - Debug postbuild process.
+
+Configuration tasks:
+- `CONFIG-install RimWorld debug` - Install RimWorld Doorstop for debugging.
+- `CONFIG-remove RimWorld debug` - Remove RimWorld Doorstop files.
+- `CONFIG-change mod name` - Automated task to rename your mod and update all related files.
+- `CONFIG-change RimWorld path` - Set the path to your RimWorld installation.
+- `CONFIG-change dnSpy path` - Set the path to your dnSpy executable.
+
+### Project Structure
+
+- `src/` - Source code directory
+- `mod-structure/` - Template files for the mod (About.xml, etc.)
+- `build/` - Build scripts and utilities
+- `lib/` - Local dependencies (copied from RimWorld installation)
+- `out/` - Build output directory
 
 ### Decompile Assembly
 
@@ -86,7 +101,7 @@ Alternatively, use an external program like [dnSpy](https://github.com/dnSpyEx/d
 
 Using [RimWorld Doorstop](https://github.com/pardeike/Rimworld-Doorstop) to enable Debugging:
 
-1. Just run the task `install RimWorld debug`.
+1. Just run the task `CONFIG-install RimWorld debug`.
 2. Download and run [dnSpy](https://github.com/dnSpyEx/dnSpy).
 3. Open Assembly-CSharp.dll (usually in `"C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\Assembly-CSharp.dll"`).
 4. Open your mod assembly.dll in (usually in `"C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\YOURMOD\VERSION\Assemblies\YOURMOD.dll"`).
@@ -99,4 +114,4 @@ The Debugger is running in the background. With `F9` you can set breakpoints.
 > -> `public bool Drafted` -> `set` -> `if(value == this.draftedInt)` Line: 24
 > The game stops at your breakpoint when you draft a pawn in the game.
 
-Run the task `remove RimWorld debug` to remove the files in your RimWorld installation.
+Run the task `CONFIG-remove RimWorld debug` to remove the files in your RimWorld installation.

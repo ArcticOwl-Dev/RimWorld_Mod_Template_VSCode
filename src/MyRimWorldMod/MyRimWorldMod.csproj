@@ -33,7 +33,7 @@
     <Exec Command="powershell -ExecutionPolicy Bypass -NoProfile -File ..\..\build\build.ps1 -Command CopyDependencies" />
   </Target>
   <Target Name="PreBuild" BeforeTargets="BeforeBuild">
-    <Exec Command="powershell -ExecutionPolicy Bypass -NoProfile -File ..\..\build\build.ps1 -Command PreBuild" />
+    <Exec Command="powershell -ExecutionPolicy Bypass -NoProfile -File ..\..\build\build.ps1 -Command PreBuild -VSConfiguration $(Configuration)" />
   </Target>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="powershell -ExecutionPolicy Bypass -NoProfile -File ..\..\build\build.ps1 -Command PostBuild -VSConfiguration $(Configuration)" />

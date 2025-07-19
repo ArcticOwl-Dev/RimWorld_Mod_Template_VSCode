@@ -11,7 +11,15 @@ param
 
     [Parameter(Mandatory = $false)]
     [string]
-    $NewModName = ""
+    $NewModName = "",
+
+    [Parameter(Mandatory = $false)]
+    [string]
+    $EnvName = "",
+
+    [Parameter(Mandatory = $false)]
+    [string]
+    $EnvValue = ""
 
 )
 
@@ -145,9 +153,8 @@ function Build {
 
     CopyDependencies
 
-    Write-Host -ForegroundColor Blue "`r`n#### Build ####"
-    
-    dotnet build $script:file_modcsproj --verbosity detailed
+    Write-Host -ForegroundColor Blue "`r`n#### Build - $VSConfiguration ####"
+    dotnet build $script:file_modcsproj --verbosity detailed --configuration $VSConfiguration
 
     Write-Host "`r`n"
 
@@ -269,6 +276,7 @@ function CopyFilesToRimworld {
 # automatically called when building by .csproj [AfterTargets="PostBuildEvent"]
 function PostBuild {
     Write-Host -ForegroundColor Blue "`r`n#### PostBuild ####"
+    Write-Host " -> VSConfiguration: $VSConfiguration"
 
     CopyAssemblyFile
     CreateModFolder
@@ -298,6 +306,13 @@ function StartRimWorldQuickTest {
     }
     Write-Host "Start RimWorld"
     Start-Process -FilePath "$script:path_RimWorldInstallation\RimWorldWin64.exe" -ArgumentList "-quicktest" 
+}
+
+# can be called by tasks.json from vscode
+# StartRimWorld only called when Build is successful (exit call in Build function)
+function BuildAndStartRimWorld {
+    Build
+    StartRimWorld
 }
 
 # can be called by tasks.json from vscode
@@ -333,80 +348,46 @@ function ChangeModName {
 
     $script:ModName = $newModName
 
-
-    # Rename .sln file
-    $slnFile = Get-ChildItem -Path "$script:path_solutionRoot" -Filter "*.sln"
-    if (-not $slnFile) {
-        Write-Host -ForegroundColor Red " -> .sln file not found"
+    # Change name in about.xml file in mod-structure (read as XML)
+    $aboutFile = Get-ChildItem -Path "$script:path_mod_structure\About\About.xml"
+    if ($aboutFile) {
+        [xml]$aboutFileContent = Get-Content -Path $aboutFile
+        $aboutFileContent.ModMetaData.name = $newModName
+        $aboutFileContent.Save($aboutFile)
     }
-    elseif ($slnFile.Name -eq "$newModName.sln") {
-        Write-Host -ForegroundColor Yellow " -> .sln file is already named $newModName.sln"
-    }
-    else {
-        Rename-Item -Path $slnFile.FullName -NewName "$newModName.sln"
-        Write-Host " -> .sln file renamed to $newModName.sln"
-    }
+    Write-Host " -> About.xml file updated"
 
     # Rename project folder in src
     $projectFolder = Get-ChildItem -Path "$script:path_src" -Directory
     if (-not $projectFolder) {
         Write-Host -ForegroundColor Red " -> project folder in $script:path_src not found"
     }
-    elseif ($projectFolder.Name -eq $newModName) {
-        Write-Host -ForegroundColor Yellow " -> project folder is already named $newModName"
-    }
     else {
-        Rename-Item -Path $projectFolder.FullName -NewName "$newModName"
-        Write-Host " -> project folder renamed to $newModName"
+        $currentFolderName = Split-Path $projectFolder.FullName -Leaf
+        if ($currentFolderName -ne $newModName) {
+            Rename-Item -Path $projectFolder.FullName -NewName "$newModName"
+            Write-Host " -> project folder renamed to $newModName"
+        }
+        else {
+            Write-Host " -> project folder already has the correct name: $newModName"
+        }
     }
 
     # Rename .csproj file in src
     $script:file_modcsproj = Get-ChildItem -Path "$script:path_src" -Filter "*.csproj" -Recurse -ErrorAction Stop
-    $expectedCsprojPath = "$script:path_src\$newModName\$newModName.csproj"
     if (-not $script:file_modcsproj) {
-        Write-Host -ForegroundColor Red " -> .csproj file in $script:path_src not found"
+        Write-Host -ForegroundColor Red " -> .csproj file in $script:path_src not found (Recursively searched)"
+        exit;
     }
-    elseif ($script:file_modcsproj.FullName -eq $expectedCsprojPath) {
-        Write-Host -ForegroundColor Yellow " -> .csproj file is already named $newModName.csproj"
-    }
-    else {
+    $currentCsprojName = Split-Path $script:file_modcsproj.FullName -Leaf
+    if ($currentCsprojName -ne "$newModName.csproj") {
         Rename-Item -Path $script:file_modcsproj.FullName -NewName "$newModName.csproj"
         Write-Host " -> .csproj file renamed to $newModName.csproj"
-        $script:file_modcsproj = Get-ChildItem -Path "$script:path_src" -Filter "*.csproj" -Recurse -ErrorAction Stop
-    }
-
-
-    # Change content in .sln file to new ModName
-    $slnFileContent = Get-Content -Path "$script:path_solutionRoot\$newModName.sln" -Raw
-
-    # update .sln file project line with new name, path and GUID
-    $oldProjectMatch = [regex]::Match($slnFileContent, 'Project\("(\{[A-F0-9\-]+\})"\) = "([^"]+)", "([^"]+)", "(\{[^}]+\})"')
-    if ($oldProjectMatch.Success) {
-        $projectTypeGuid = $oldProjectMatch.Groups[1].Value
-        $oldProjectGuid = $oldProjectMatch.Groups[4].Value
-        
-        $newGuid = [System.Guid]::NewGuid().ToString("B").ToUpper()
-        $csprojRelativePath = [IO.Path]::GetRelativePath($script:path_solutionRoot, $script:file_modcsproj.FullName)
-        $newProjectLine = "Project(`"$projectTypeGuid`") = `"$newModName`", `"$csprojRelativePath`", `"$newGuid`""
-        
-        $slnFileContent_updated = $slnFileContent -replace [regex]::Escape($oldProjectMatch.Value), $newProjectLine
-        
-        # Also update the ProjectConfigurationPlatforms section with the new GUID
-        $slnFileContent_updated = $slnFileContent_updated -replace [regex]::Escape($oldProjectGuid), $newGuid
     }
     else {
-        Write-Host -ForegroundColor Red " -> Could not find project line in .sln file"
-        return
+        Write-Host " -> .csproj file already has the correct name: $newModName.csproj"
     }
-
-    # Generate new solution GUID
-    $newSolutionGuid = [System.Guid]::NewGuid().ToString("B").ToUpper()
-    $slnFileContent_updated = $slnFileContent_updated -replace 'SolutionGuid = \{[A-F0-9\-]+\}', "SolutionGuid = $newSolutionGuid"
-
-    # Write the updated content back to the file
-    $slnFileContent_updated | Out-File -FilePath "$script:path_solutionRoot\$newModName.sln" -Encoding UTF8
-    Write-Host " -> .sln file updated"
-
+    $script:file_modcsproj = Get-ChildItem -Path "$script:path_src" -Filter "*.csproj" -Recurse -ErrorAction Stop
 
     # Change content in .csproj file to new ModName (load as XML)
     [xml]$csproj = Get-Content $script:file_modcsproj.FullName
@@ -414,7 +395,26 @@ function ChangeModName {
     $csproj.Project.PropertyGroup[0].RootNamespace = $newModName
     $csproj.Save($script:file_modcsproj)
     Write-Host " -> .csproj file updated"
-
+    
+    # Rename .slnx file
+    $slnxFile = Get-ChildItem -Path "$script:path_solutionRoot" -Filter "*.slnx"
+    $currentSlnxName = Split-Path $slnxFile.FullName -Leaf
+    if ($currentSlnxName -ne "$newModName.slnx") {
+        Rename-Item -Path $slnxFile.FullName -NewName "$newModName.slnx"
+        Write-Host " -> .slnx file renamed to $newModName.slnx"
+    }
+    else {
+        Write-Host " -> .slnx file already has the correct name: $newModName.slnx"
+    }
+    $slnxPath = "$script:path_solutionRoot\$newModName.slnx"
+    
+    # Update the .slnx file content to reflect the new .csproj path
+    [xml]$slnxFileContent = Get-Content -Path $SlnxPath
+    $csprojRelativePath = [IO.Path]::GetRelativePath($script:path_solutionRoot, $script:file_modcsproj.FullName)
+    $slnxFileContent.Solution.Project.Path = $csprojRelativePath
+    $slnxFileContent.Save($slnxPath)
+    Write-Host " -> .slnx file updated with new .csproj path"
+    
 
     # Change content in Main.cs to new ModName
     $mainFile = Get-ChildItem -Path "$script:path_src\$newModName" -Filter "Main.cs"
@@ -429,23 +429,21 @@ function ChangeModName {
     }
     Write-Host " -> Main.cs file updated"
 
-    # Change name in about.xml file in mod-structure (read as XML)
-    $aboutFile = Get-ChildItem -Path "$script:path_mod_structure\About\About.xml"
-    if ($aboutFile) {
-        [xml]$aboutFileContent = Get-Content -Path $aboutFile
-        $aboutFileContent.ModMetaData.name = $newModName
-        $aboutFileContent.Save($aboutFile)
-    }
-    Write-Host " -> About.xml file updated"
+
     Write-Host -ForegroundColor Green "All files updated to new ModName: $newModName"    
     Write-Host "`r`n"
 
     Clean
-    dotnet clean $script:file_modcsproj
-
     Write-Host -ForegroundColor Green "Project cleaned"
 }
 
+# can be called by tasks.json from vscode
+function SetEnviromentVariable {
+
+    Write-Host -ForegroundColor Blue "`r`n#### SetEnviromentVariable ####"
+    [System.Environment]::SetEnvironmentVariable($script:EnvName, $script:EnvValue, [System.EnvironmentVariableTarget]::User)
+    Write-Host " -> Set Environment Variable '$script:EnvName' to '$script:EnvValue'`r`n"
+}
 
 & $Command
 

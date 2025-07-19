@@ -538,7 +538,7 @@ function GetRimWorldInstallationPath {
 
     Write-Host "Looking for RimWorld installation..."
 
-    $path_RimWorld = [System.Environment]::GetEnvironmentVariable("RimWorldInstallationPath", "User")
+    $path_RimWorld = [System.Environment]::GetEnvironmentVariable("path_RimWorld", "User")
     if (![string]::IsNullOrEmpty($path_RimWorld)) {
         if (Test-Path "$path_RimWorld\RimWorldWin64.exe") {
             Write-Host " -> Found RimWorld Path (env): $path_RimWorld`r`n"
@@ -549,16 +549,16 @@ function GetRimWorldInstallationPath {
     $StandardRimWorldInstallationPath = "C:\Program Files (x86)\Steam\steamapps\common\RimWorld"
     if (Test-Path "$StandardRimWorldInstallationPath\RimWorldWin64.exe") {
         Write-Host " -> Found RimWorld Path (standard): $StandardRimWorldInstallationPath `r`n"
-        [System.Environment]::SetEnvironmentVariable("RimWorldInstallationPath", $StandardRimWorldInstallationPath, [System.EnvironmentVariableTarget]::User)
+        [System.Environment]::SetEnvironmentVariable("path_RimWorld", $StandardRimWorldInstallationPath, [System.EnvironmentVariableTarget]::User)
         return $StandardRimWorldInstallationPath
     }
 
-    Write-Host " -> RimWorld installation not found; Need Enviroment variable 'RimWorldInstallationPath'"
+    Write-Host " -> RimWorld installation not found; Need Enviroment variable 'path_RimWorld'"
     if ((Read-Host "Do you want to create a new environment variable for the RimWorld installation path? (y/n)") -eq "y") {
          
         for ($i = 0; $i -lt 3; $i++) {
-            SetEnviromentVariableInteractive -Question "Please enter the path to the RimWorld installation" -EnvName "RimWorldInstallationPath"
-            $path_RimWorld = [System.Environment]::GetEnvironmentVariable("RimWorldInstallationPath", "User")
+            SetEnviromentVariableInteractive -Question "Please enter the path to the RimWorld installation" -EnvName "path_RimWorld"
+            $path_RimWorld = [System.Environment]::GetEnvironmentVariable("path_RimWorld", "User")
             if (Test-Path "$path_RimWorld\RimWorldWin64.exe") {
                 return $path_RimWorld
             }
@@ -566,7 +566,7 @@ function GetRimWorldInstallationPath {
         }
     }
 
-    Write-Host " -> Rimworld installation not found; Need Enviroment variable 'RimWorldInstallationPath' "
+    Write-Host " -> Rimworld installation not found; Need Enviroment variable 'path_RimWorld' "
     exit "RimWorld installation not found"
 
 }
